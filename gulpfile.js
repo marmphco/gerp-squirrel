@@ -15,7 +15,6 @@ gulp.task('clean', function() {
 
 gulp.task('process-js', function() {
     return gulp.src('src/ts/**/*.ts')
-        .pipe(cache('typescript'))
         .pipe(tsc({
             out: 'gerp-squirrel.js'
         })).js
@@ -30,7 +29,6 @@ gulp.task('process-html', function() {
 
 gulp.task('process-css', function() {
     return gulp.src('src/css/**/*.less')
-        .pipe(cache('less'))
         .pipe(less({
             paths: ['src/css/']
         }))
