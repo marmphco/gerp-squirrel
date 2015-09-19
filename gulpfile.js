@@ -9,7 +9,7 @@ gulp.task('default', ['process-html', 'process-css', 'process-js']);
 gulp.task('clean', function() {
     cache.caches = {};
     return del([
-        'build/*'
+        'build/'
     ]);
 });
 
