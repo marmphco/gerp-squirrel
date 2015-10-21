@@ -7,7 +7,7 @@ module GerpSquirrel {
         (): void;
     }
 
-    export interface RenderLoop {
+    export interface RunLoop {
         run(): void;
         scheduleUpdateFunction(func: () => void, removalPredicate: () => boolean): void;
         scheduleRenderFunction(func: (number) => void, removalPredicate: () => boolean): void;
@@ -20,11 +20,13 @@ module GerpSquirrel {
         removalPredicate: () => boolean;
     }
 
-    export function RenderLoopMake(updateInterval: number): RenderLoop {
+    export function RunLoopMake(updateInterval: number): RunLoop {
         var elapsedTime: number = 0
         var timeOflastRender: number = (new Date()).getTime()
         var updateFunctions: Array<SchedulingContext<UpdateFunction>> = [];
         var renderFunctions: Array<SchedulingContext<RenderFunction>> = [];
+        var pendingUpdateFunctions: Array<SchedulingContext<UpdateFunction>> = [];
+        var pendingRenderFunctions: Array<SchedulingContext<RenderFunction>> = [];
 
         return {
             run: function() {
@@ -32,7 +34,8 @@ module GerpSquirrel {
                 renderFunctions = renderFunctions.filter((context) => {
                     context.item(timeIntoFrame);
                     return context.removalPredicate();
-                });
+                }).concat(pendingRenderFunctions);
+                pendingRenderFunctions = [];
                 
                 const currentTime: number = (new Date()).getTime();
                 elapsedTime += currentTime - timeOflastRender;
@@ -42,18 +45,20 @@ module GerpSquirrel {
                     updateFunctions = updateFunctions.filter((context) => {
                         context.item();
                         return context.removalPredicate();
-                    });
+                    }).concat(pendingUpdateFunctions);
+                    pendingUpdateFunctions = [];
+                    
                     elapsedTime -= updateInterval;
                 }
             },
             scheduleUpdateFunction: function(func: () => void, removalPredicate: () => boolean) {
-                updateFunctions.push({
+                pendingUpdateFunctions.push({
                     item: func,
                     removalPredicate: removalPredicate
                 });
             },
             scheduleRenderFunction: function(func: (number) => void, removalPredicate: () => boolean) {
-                renderFunctions.push({
+                pendingRenderFunctions.push({
                     item: func,
                     removalPredicate: removalPredicate
                 });
