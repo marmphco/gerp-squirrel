@@ -2,6 +2,6 @@
 
 module Client {
     export class Gerp <> {
-        position: GerpSquirrel.Vector2
+        position: GerpSquirrel.Vector2.Vector2
     }
 }

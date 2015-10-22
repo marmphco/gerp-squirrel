@@ -3,29 +3,32 @@
 /// <reference path="../engine/render.ts" />
 /// <reference path="../client/gerp.ts" />
 
+import gs = GerpSquirrel;
+import v2 = GerpSquirrel.Vector2;
+
 module Client {
 
     interface RenderInfo {
-        position: GerpSquirrel.Vector2;
+        position: v2.Vector2;
     }
 
     interface Physical {
-        position: GerpSquirrel.Vector2;
-        velocity: GerpSquirrel.Vector2;
+        position: v2.Vector2;
+        velocity: v2.Vector2;
     }
 
-    class Test implements GerpSquirrel.Interpolatable<RenderInfo>, Physical {
-        position: GerpSquirrel.Vector2;
-        velocity: GerpSquirrel.Vector2;
+    class Test implements gs.Interpolatable<RenderInfo>, Physical {
+        position: v2.Vector2;
+        velocity: v2.Vector2;
 
         constructor() {
-            this.position = new GerpSquirrel.Vector2(Math.random()*100, Math.random()*100)
-            this.velocity = new GerpSquirrel.Vector2(Math.random(), Math.random())
+            this.position = [Math.random() * 100, Math.random() * 100]
+            this.velocity = [Math.random() * 2 + 2, Math.random() * 2 + 2]
         }
 
         interpolate(timeIntoFrame: number) {
             return {
-                position: this.position.add(this.velocity.scale(timeIntoFrame))
+                position: v2.add(this.position, v2.scale(this.velocity, timeIntoFrame))
             }
         }
     }
@@ -36,25 +39,26 @@ module Client {
         context.fillStyle = '#000000';
         context.fillRect(0, 0, element.width, element.height);
 
-        const renderer = GerpSquirrel.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
-            context.fillRect(item.position.x, item.position.y, 20, 20);
+        const renderer = gs.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
+            context.fillRect(item.position[0], item.position[1], 20, 20);
         });
-        renderer.addItem(new Test());
-        const renderLoop = GerpSquirrel.RunLoopMake(1000 / 30);
+        const renderLoop = gs.RunLoopMake(1000 / 30);
 
         renderLoop.scheduleRenderFunction((timeIntoFrame: number) => {
             context.clearRect(0, 0, element.width, element.height);
-        }, GerpSquirrel.forever);
+        }, gs.forever);
 
-        renderLoop.scheduleRenderFunction(renderer.run, GerpSquirrel.forever);
+        renderLoop.scheduleRenderFunction(renderer.run, gs.forever);
 
         renderLoop.scheduleUpdateFunction(() => {
             const item = new Test();
             renderer.addItem(item);
             renderLoop.scheduleUpdateFunction(() => {
-                item.position = item.position.add(item.velocity);
-            }, GerpSquirrel.forever);
-        }, GerpSquirrel.repeat(50));
+                item.position = v2.add(item.position, item.velocity);
+            }, () => {
+                return item.position[1] < element.height - 20 && item.position[0] < element.width - 20;
+            });
+        }, gs.repeat(1000));
 
         setInterval(renderLoop.run, 1000 / 30);
     }
