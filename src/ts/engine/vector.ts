@@ -34,6 +34,8 @@ module GerpSquirrel.Vector2 {
         1: number;
     }
 
+    export const zero: Vector2 = [0, 0];
+
     export function add(u: Vector2, v: Vector2): Vector2 {
         return [u[0] + v[0], u[1] + v[1]];
     }

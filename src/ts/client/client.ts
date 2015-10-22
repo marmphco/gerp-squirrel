@@ -1,10 +1,12 @@
 /// <reference path="../engine/runloop.ts" />
 /// <reference path="../engine/vector.ts" />
 /// <reference path="../engine/render.ts" />
+/// <reference path="../engine/event.ts" />
 /// <reference path="../client/gerp.ts" />
 
 import gs = GerpSquirrel;
 import v2 = GerpSquirrel.Vector2;
+import ev = GerpSquirrel.Event;
 
 module Client {
 
@@ -33,7 +35,17 @@ module Client {
         }
     }
 
+    enum Events {
+        PlaceHolder,
+        Other
+    }
+
     export function init(element: HTMLCanvasElement) {
+
+        var dispatcher = ev.DispatcherMake();
+        dispatcher.addResponder(Events.PlaceHolder, (event, data) => {
+            console.log(event, data);
+        });
 
         const context = element.getContext('2d');
         context.fillStyle = '#000000';
@@ -53,13 +65,36 @@ module Client {
         renderLoop.scheduleUpdateFunction(() => {
             const item = new Test();
             renderer.addItem(item);
+            var life = Math.floor(Math.random() * 400 + 200);
             renderLoop.scheduleUpdateFunction(() => {
                 item.position = v2.add(item.position, item.velocity);
+                if (item.position[0] > element.width) {
+                    item.position[0] = element.width;
+                    item.velocity[0] *= -1;
+                }
+                else if (item.position[0] < 0) {
+                    item.position[0] = 0;
+                    item.velocity[0] *= -1;
+                }
+                else if (item.position[1] > element.height) {
+                    item.position[1] = element.height;
+                    item.velocity[1] *= -1;
+                }
+                else if (item.position[1] < 0) {
+                    item.position[1] = 1;
+                    item.velocity[1] *= -1;
+                }
+                    
             }, () => {
-                return item.position[1] < element.height - 20 && item.position[0] < element.width - 20;
+                life--;
+                if (life == 16) {
+                    dispatcher.dispatch(Events.PlaceHolder, item.position[0]);
+                    item.velocity = v2.zero;
+                }
+                return life > 0;
             });
         }, gs.repeat(1000));
 
-        setInterval(renderLoop.run, 1000 / 30);
+        setInterval(renderLoop.run, 1000 / 60);
     }
 }

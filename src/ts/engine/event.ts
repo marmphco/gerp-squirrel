@@ -1,44 +1,58 @@
-module GerpSquirrel {
-    module Event {
-        export interface Responder<EventType extends number> {
-            (event: EventType, eventData: any): void;
+module GerpSquirrel.Event {
+    export type Event = number;
+
+    export interface Responder {
+        (event: Event, eventData: any): void;
+    }
+
+    export interface Dispatcher {
+        dispatch(event: Event, eventData: any);
+        addResponder(event: Event, responder: Responder);
+        removeResponder(event: Event, id: ResponderID);
+        removeAllResponders(event: Event);
+    }
+
+    export function DispatcherMake(): Dispatcher {
+        return new _Dispatcher();
+    }
+
+    type ResponderID = number;
+
+    class _Dispatcher implements Dispatcher {
+        currentID: number;
+        responders: Array<Array<Responder>>;
+
+        constructor() {
+            this.responders = [];
+            this.currentID = 0;
         }
 
-        export interface Dispatcher<EventType extends number> {
-            dispatch(event: EventType, eventData: any);
-            addResponder(event: EventType, responder: Responder<EventType>);
-            removeResponder(event: EventType, id: ResponderID);
+        dispatch(event: Event, eventData: any) {
+            if (this.responders[event]) {
+                this.responders[event].forEach((responder) => {
+                    responder(event, eventData);
+                });
+            }
         }
 
-        export function DispatcherMake<EventType extends number>(): Dispatcher<EventType> {
-            return new _Dispatcher<EventType>();
+        addResponder(event: Event, responder: Responder): ResponderID {
+            if (this.responders[event] == null) {
+                this.responders[event] = [];
+            }
+            const id = this.currentID++;
+            this.responders[event][id] = responder;
+
+            return id;
         }
 
-        type ResponderID = number;
-
-        interface ResponderMap<EventType extends number> {
-            [index: ResponderID]: Responder<EventType>
+        removeResponder(event: Event, id: ResponderID) {
+            if (this.responders[event] != null) {
+                delete this.responders[event][id];
+            }
         }
 
-        class _Dispatcher<EventType extends number> implements Dispatcher<EventType> {
-            
-            responders: ResponderMap<EventType>;
-
-            constructor() {
-
-            }
-
-            dispatch(event: EventType, eventData: any) {
-
-            }
-
-            addResponder(event: EventType, responder: Responder<EventType>) {
-
-            }
-
-            removeResponder(event: EventType, id: ResponderID) {
-                
-            }
+        removeAllResponders(event: Event) {
+            this.responders[event] = [];
         }
     }
 }
