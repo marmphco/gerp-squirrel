@@ -40,12 +40,34 @@ module Client {
         Other
     }
 
+    function buffer<T>(n: number, f: (element: Array<T>) => void): (T) => void {
+        var buffer = [];
+        return (element: T) => {
+            buffer.push(element);
+            if (buffer.length == n) {
+                f(buffer);
+                buffer = [];
+            }
+        };
+    }
+
+    function rollingWindow<T>(n: number, f: (element: Array<T>) => void): (T) => void {
+        var buffer = [];
+        return (element: T) => {
+            buffer.push(element);
+            if (buffer.length == n) {
+                f(buffer);
+                buffer.shift();
+            }
+        };
+    }
+
     export function init(element: HTMLCanvasElement) {
 
         var dispatcher = ev.DispatcherMake();
-        dispatcher.addResponder(Events.PlaceHolder, (event, data) => {
-            console.log(event, data);
-        });
+        dispatcher.addResponder(Events.PlaceHolder, rollingWindow(10, (events) => {
+            console.log(events);
+        }));
 
         const context = element.getContext('2d');
         context.fillStyle = '#000000';

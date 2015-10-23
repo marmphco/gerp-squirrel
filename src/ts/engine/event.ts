@@ -1,8 +1,13 @@
 module GerpSquirrel.Event {
     export type Event = number;
 
+    export interface EventData {
+        event: Event;
+        data: any;
+    }
+
     export interface Responder {
-        (event: Event, eventData: any): void;
+        (eventData: EventData): void;
     }
 
     export interface Dispatcher {
@@ -30,7 +35,10 @@ module GerpSquirrel.Event {
         dispatch(event: Event, eventData: any) {
             if (this.responders[event]) {
                 this.responders[event].forEach((responder) => {
-                    responder(event, eventData);
+                    responder({
+                        event: event,
+                        data: eventData
+                    });
                 });
             }
         }
