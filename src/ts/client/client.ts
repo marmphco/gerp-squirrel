@@ -2,6 +2,7 @@
 /// <reference path="../engine/core/event.ts" />
 /// <reference path="../engine/math/vector.ts" />
 /// <reference path="../engine/render/render.ts" />
+/// <reference path="../engine/input/mouse.ts" />
 /// <reference path="../client/gerp.ts" />
 
 import gs = GerpSquirrel;
@@ -59,14 +60,18 @@ module Client {
 
     export function init(element: HTMLCanvasElement) {
 
-        var dispatcher = ev.StreamMake<v2.Vector2>();
+        const mouseInput = GerpSquirrel.Input.MouseInputMake();
+        mouseInput.attachToElement(element);
+        mouseInput.moveSource().addReceiver((mouseInfo) => {
+            console.log(mouseInfo.position);
+        });
+        
+        const dispatcher = ev.StreamMake<v2.Vector2>();
         dispatcher.addReceiver(rollingWindow(10, (events) => {
-            console.log(events);
+            //console.log(events);
         }));
 
         const context = element.getContext('2d');
-        context.fillStyle = '#000000';
-        context.fillRect(0, 0, element.width, element.height);
 
         const renderer = gs.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
             context.fillRect(item.position[0], item.position[1], 20, 20);
