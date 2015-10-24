@@ -1,4 +1,4 @@
-/// <reference path="../engine/vector.ts" />
+/// <reference path="../engine/math/vector.ts" />
 
 module Client {
     export class Gerp <> {

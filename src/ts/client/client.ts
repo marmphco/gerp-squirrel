@@ -1,7 +1,7 @@
-/// <reference path="../engine/runloop.ts" />
-/// <reference path="../engine/vector.ts" />
-/// <reference path="../engine/render.ts" />
-/// <reference path="../engine/event.ts" />
+/// <reference path="../engine/core/runloop.ts" />
+/// <reference path="../engine/core/event.ts" />
+/// <reference path="../engine/math/vector.ts" />
+/// <reference path="../engine/render/render.ts" />
 /// <reference path="../client/gerp.ts" />
 
 import gs = GerpSquirrel;
