@@ -1,66 +1,54 @@
 module GerpSquirrel.Event {
-    export type Event = number;
 
-    export interface EventData {
-        event: Event;
-        data: any;
+    export interface Receiver<T> {
+        (item: T): void;
     }
 
-    export interface Responder {
-        (eventData: EventData): void;
+    type ReceiverID = number;
+
+    export interface Source<T> {
+        addReceiver(receiver: Receiver<T>): ReceiverID;
+        removeReceiver(receiverID: ReceiverID): void;
+        removeAllReceivers(): void;
     }
 
-    export interface Dispatcher {
-        dispatch(event: Event, eventData: any);
-        addResponder(event: Event, responder: Responder);
-        removeResponder(event: Event, id: ResponderID);
-        removeAllResponders(event: Event);
+    export interface Sink<T> {
+        publish(item: T): void;
     }
 
-    export function DispatcherMake(): Dispatcher {
-        return new _Dispatcher();
-    }
+    export interface Stream<T> extends Source<T>, Sink<T> {}
 
-    type ResponderID = number;
-
-    class _Dispatcher implements Dispatcher {
+    class _Stream<T> implements Stream<T> {
         currentID: number;
-        responders: Array<Array<Responder>>;
+        receivers: Array<Receiver<T>>;
 
         constructor() {
-            this.responders = [];
+            this.receivers = [];
             this.currentID = 0;
         }
 
-        dispatch(event: Event, eventData: any) {
-            if (this.responders[event]) {
-                this.responders[event].forEach((responder) => {
-                    responder({
-                        event: event,
-                        data: eventData
-                    });
-                });
-            }
+        publish(item: T): void {
+            this.receivers.forEach((receiver) => {
+                receiver(item);
+            });
         }
 
-        addResponder(event: Event, responder: Responder): ResponderID {
-            if (this.responders[event] == null) {
-                this.responders[event] = [];
-            }
+        addReceiver(receiver: Receiver<T>): ReceiverID {
             const id = this.currentID++;
-            this.responders[event][id] = responder;
-
+            this.receivers[id] = receiver;
             return id;
         }
 
-        removeResponder(event: Event, id: ResponderID) {
-            if (this.responders[event] != null) {
-                delete this.responders[event][id];
-            }
+        removeReceiver(receiverID: ReceiverID): void {
+            delete this.receivers[receiverID];
         }
 
-        removeAllResponders(event: Event) {
-            this.responders[event] = [];
+        removeAllReceivers(): void {
+            this.receivers = [];
         }
+    }
+
+    export function StreamMake<T>(): Stream<T> {
+        return new _Stream<T>();
     }
 }

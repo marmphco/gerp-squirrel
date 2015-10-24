@@ -35,11 +35,6 @@ module Client {
         }
     }
 
-    enum Events {
-        PlaceHolder,
-        Other
-    }
-
     function buffer<T>(n: number, f: (element: Array<T>) => void): (T) => void {
         var buffer = [];
         return (element: T) => {
@@ -64,8 +59,8 @@ module Client {
 
     export function init(element: HTMLCanvasElement) {
 
-        var dispatcher = ev.DispatcherMake();
-        dispatcher.addResponder(Events.PlaceHolder, rollingWindow(10, (events) => {
+        var dispatcher = ev.StreamMake<v2.Vector2>();
+        dispatcher.addReceiver(rollingWindow(10, (events) => {
             console.log(events);
         }));
 
@@ -110,7 +105,7 @@ module Client {
             }, () => {
                 life--;
                 if (life == 16) {
-                    dispatcher.dispatch(Events.PlaceHolder, item.position[0]);
+                    dispatcher.publish(item.position);
                     item.velocity = v2.zero;
                 }
                 return life > 0;
