@@ -2,11 +2,40 @@
 
 module GerpSquirrel.Region {
 
+    import v2 = GerpSquirrel.Vector2;
     import Vector2 = GerpSquirrel.Vector2.Vector2;
 
     export interface Region {
         containsVector(u: Vector2): boolean;
-        closestBoundaryVectortoVector(u: Vector2): Vector2;
+        nearestBoundaryVectorToVector(u: Vector2): Vector2;
+    }
+
+    export interface Circle extends Region {
+        center: Vector2;
+        radius: number;
+    }
+
+    export function CircleMake(center: Vector2, radius: number): Circle {
+        return new _Circle(center, radius);
+    }
+
+    class _Circle implements Circle {
+
+        center: Vector2;
+        radius: number;
+
+        constructor(center: Vector2, radius: number) {
+            this.center = center;
+            this.radius = radius;
+        }
+
+        containsVector(u: Vector2): boolean {
+            return v2.lengthSquared(v2.subtract(this.center, u)) < this.radius * this.radius;
+        }
+
+        nearestBoundaryVectorToVector(u: Vector2): Vector2 {
+            return v2.add(this.center, v2.scale(v2.normalize(v2.subtract(u, this.center)), this.radius));
+        }
     }
 
     export interface Box2 extends Region {
@@ -14,8 +43,8 @@ module GerpSquirrel.Region {
         size: Vector2;
     }
 
-    export function Box2Make(): Box2 {
-        return new _Box2();
+    export function Box2Make(origin: Vector2, size: Vector2): Box2 {
+        return new _Box2(origin, size);
     }
 
     class _Box2 implements Box2 {
@@ -36,7 +65,7 @@ module GerpSquirrel.Region {
             return !(u[0] < left || right < u[0] || u[1] < top || bottom < u[1]);
         }
 
-        closestBoundaryVectortoVector(u: Vector2): Vector2 {
+        nearestBoundaryVectorToVector(u: Vector2): Vector2 {
             const left = this.origin[0];
             const right = this.origin[0] + this.size[0];
             const top = this.origin[1];

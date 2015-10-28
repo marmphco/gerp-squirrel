@@ -25,6 +25,24 @@ module GerpSquirrel.Vector {
             return value * scale;
         });
     }
+
+    export function length(u: Vector): number {
+        return Math.sqrt(lengthSquared(u));
+    }
+
+    export function lengthSquared(u: Vector): number {
+        return u.reduce((sum: number, value: number) => {
+            return value * value;
+        }, 0);
+    }
+
+    export function normalize(u: Vector): Vector {
+        return scale(u, 1 / length(u));
+    }
+
+    export function project(u: Vector, onto: Vector): Vector {
+        return scale(normalize(onto), dot(u, onto) / length(onto));
+    }
 }
 
 module GerpSquirrel.Vector2 {
@@ -50,5 +68,21 @@ module GerpSquirrel.Vector2 {
 
     export function scale(u: Vector2, scale: number): Vector2 {
         return [u[0] * scale, u[1] * scale];
+    }
+
+    export function length(u: Vector2): number {
+        return Math.sqrt(u[0] * u[0] + u[1] * u[1]);
+    }
+
+    export function lengthSquared(u: Vector2): number {
+        return u[0] * u[0] + u[1] * u[1];
+    }
+
+    export function normalize(u: Vector2): Vector2 {
+        return scale(u, 1 / length(u));
+    }
+
+    export function project(u: Vector2, onto: Vector2): Vector2 {
+        return scale(normalize(onto), dot(u, onto) / length(onto));
     }
 }
