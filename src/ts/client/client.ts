@@ -76,13 +76,16 @@ module Client {
             console.log(mouseInfo.position);
             mouseVector = mouseInfo.position;
             largeCircleRegion.center = mouseVector;
-            //circleRegion.center = mouseVector;
             regionCenter = mouseVector;
         });
 
         var circleRegion = region.DistanceFieldMake((u: Vector2) => {
             return v2.length(v2.subtract(u, regionCenter)) - 80;
-        });//region.CircleMake([0, 0], 80);
+        });
+        var staticRegion = region.DistanceFieldMake((u: Vector2) => {
+            return v2.length(v2.subtract(u, [element.width/2, element.height/2])) - 100;
+        });
+
         var largeCircleRegion = region.CircleMake([0, 0], 240);
         var canvasRegion = region.Box2Make([0, 0], [element.width, element.height]);
 
@@ -99,12 +102,26 @@ module Client {
 
         const renderLoop = gs.RunLoopMake(1000 / 30);
 
+
+        mouseInput.clickSource().addReceiver(() => {
+            renderLoop.removeAllRenderFunctions();
+            renderLoop.removeAllUpdateFunctions(); 
+        });
+
         renderLoop.scheduleRenderFunction((timeIntoFrame: number) => {
             context.clearRect(0, 0, element.width, element.height);
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction(innerRenderer.run, gs.forever);
         renderLoop.scheduleRenderFunction(outerRenderer.run, gs.forever);
+
+        renderLoop.scheduleUpdateFunction(() => {
+            const points = circleRegion.intersect(staticRegion, 20.0);
+            points.forEach((point) => {
+                context.fillStyle = "#000000";
+                context.fillRect(point[0], point[1], 8, 8);
+            });
+        }, gs.forever);
 
         renderLoop.scheduleUpdateFunction(() => {
             // inner item
@@ -114,6 +131,7 @@ module Client {
             renderLoop.scheduleUpdateFunction(() => {
                 dynamics.update(item);
                 constraint.constrainToRegionComplement(item, circleRegion);
+                constraint.constrainToRegionComplement(item, staticRegion);
                 constraint.constrainToRegion(item, largeCircleRegion);
                 dynamics.applyForce(item, v2.scale(v2.normalize(v2.subtract(mouseVector, item.position)), 0.4));                
                 dynamics.applyForce(item, v2.scale(item.velocity, -0.005));                
@@ -126,6 +144,7 @@ module Client {
             renderLoop.scheduleUpdateFunction(() => {
                 dynamics.update(outerItem);
                 constraint.constrainToRegionComplement(outerItem, largeCircleRegion);
+                constraint.constrainToRegionComplement(outerItem, staticRegion);
                 constraint.constrainToRegion(outerItem, canvasRegion);
                 dynamics.applyForce(outerItem, v2.scale(v2.normalize(v2.subtract(mouseVector, outerItem.position)), 0.4));                
                 dynamics.applyForce(outerItem, v2.scale(outerItem.velocity, -0.005));                

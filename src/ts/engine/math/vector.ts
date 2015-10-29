@@ -85,4 +85,8 @@ module GerpSquirrel.Vector2 {
     export function project(u: Vector2, onto: Vector2): Vector2 {
         return scale(normalize(onto), dot(u, onto) / length(onto));
     }
+
+    export function leftOrthogonal(u: Vector2): Vector2 {
+        return [-u[1], u[0]];
+    }
 }
