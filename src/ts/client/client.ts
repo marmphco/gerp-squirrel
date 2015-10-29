@@ -4,6 +4,7 @@
 /// <reference path="../engine/render/render.ts" />
 /// <reference path="../engine/input/mouse.ts" />
 /// <reference path="../engine/math/region.ts" />
+/// <reference path="../engine/math/distance-field-region.ts" />
 /// <reference path="../engine/math/constraint.ts" />
 /// <reference path="../engine/dynamics/dynamics.ts" />
 /// <reference path="../client/gerp.ts" />
@@ -68,26 +69,31 @@ module Client {
         const mouseInput = GerpSquirrel.Input.MouseInputMake();
         mouseInput.attachToElement(element);
 
+        var regionCenter: Vector2 = [0, 0];
+
         var mouseVector: Vector2 = [0, 0];
         mouseInput.moveSource().addReceiver((mouseInfo) => {
             console.log(mouseInfo.position);
             mouseVector = mouseInfo.position;
             largeCircleRegion.center = mouseVector;
-            circleRegion.center = mouseVector;
+            //circleRegion.center = mouseVector;
+            regionCenter = mouseVector;
         });
 
-        var circleRegion = region.CircleMake([0, 0], 80);
+        var circleRegion = region.DistanceFieldMake((u: Vector2) => {
+            return v2.length(v2.subtract(u, regionCenter)) - 80;
+        });//region.CircleMake([0, 0], 80);
         var largeCircleRegion = region.CircleMake([0, 0], 240);
         var canvasRegion = region.Box2Make([0, 0], [element.width, element.height]);
 
         const context = element.getContext('2d');
 
         const innerRenderer = gs.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
-            context.fillStyle = "#22aabb"
+            context.fillStyle = "#22aabb";
             context.fillRect(item.position[0], item.position[1], 4, 4);
         });
         const outerRenderer = gs.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
-            context.fillStyle = "#dd11bb"
+            context.fillStyle = "#dd11bb";
             context.fillRect(item.position[0], item.position[1], 4, 4);
         });
 
@@ -124,7 +130,6 @@ module Client {
                 dynamics.applyForce(outerItem, v2.scale(v2.normalize(v2.subtract(mouseVector, outerItem.position)), 0.4));                
                 dynamics.applyForce(outerItem, v2.scale(outerItem.velocity, -0.005));                
             }, gs.forever);
-
 
         }, gs.repeat(1000));
 
