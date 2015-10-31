@@ -9,7 +9,7 @@ module GerpSquirrel.Region {
 
     export interface DistanceField extends Region {
         distanceAtVector: (u: Vector2) => number;
-        intersect(field: DistanceField): Array<Vector2>;
+        intersect(field: DistanceField, stepSize: number): Array<Vector2>;
     }
 
     export function DistanceFieldMake(distanceFunction: (u: Vector2) => number): DistanceField {

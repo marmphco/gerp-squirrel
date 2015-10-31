@@ -102,7 +102,6 @@ module Client {
 
         const renderLoop = gs.RunLoopMake(1000 / 30);
 
-
         mouseInput.clickSource().addReceiver(() => {
             renderLoop.removeAllRenderFunctions();
             renderLoop.removeAllUpdateFunctions(); 
@@ -110,13 +109,15 @@ module Client {
 
         renderLoop.scheduleRenderFunction((timeIntoFrame: number) => {
             context.clearRect(0, 0, element.width, element.height);
+            context.fillStyle = "#2a2a2a";
+            context.fillRect(0, 0, element.width, element.height);
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction(innerRenderer.run, gs.forever);
         renderLoop.scheduleRenderFunction(outerRenderer.run, gs.forever);
 
         renderLoop.scheduleUpdateFunction(() => {
-            const points = circleRegion.intersect(staticRegion, 20.0);
+            const points = circleRegion.intersect(staticRegion, 40.0);
             points.forEach((point) => {
                 context.fillStyle = "#000000";
                 context.fillRect(point[0], point[1], 8, 8);
