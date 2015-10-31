@@ -1,4 +1,5 @@
 /// <reference path="../math/vector.ts" />
+/// <reference path="../math/distance-field-region.ts" />
 
 module GerpSquirrel.Region {
 
@@ -10,7 +11,7 @@ module GerpSquirrel.Region {
         nearestBoundaryVectorToVector(u: Vector2): Vector2;
     }
 
-    export interface Circle extends Region {
+    export interface Circle extends DistanceField {
         center: Vector2;
         radius: number;
     }
@@ -19,26 +20,21 @@ module GerpSquirrel.Region {
         return new _Circle(center, radius);
     }
 
-    class _Circle implements Circle {
-
+    class _Circle extends _DistanceField implements Circle {
         center: Vector2;
         radius: number;
 
         constructor(center: Vector2, radius: number) {
             this.center = center;
             this.radius = radius;
-        }
 
-        containsVector(u: Vector2): boolean {
-            return v2.lengthSquared(v2.subtract(this.center, u)) < this.radius * this.radius;
-        }
-
-        nearestBoundaryVectorToVector(u: Vector2): Vector2 {
-            return v2.add(this.center, v2.scale(v2.normalize(v2.subtract(u, this.center)), this.radius));
+            super((u: Vector2) => {
+                return v2.length(v2.subtract(u, this.center)) - this.radius;
+            })
         }
     }
 
-    export interface Box2 extends Region {
+    export interface Box2 extends DistanceField {
         origin: Vector2;
         size: Vector2;
     }
@@ -47,82 +43,24 @@ module GerpSquirrel.Region {
         return new _Box2(origin, size);
     }
 
-    class _Box2 implements Box2 {
-
+    class _Box2 extends _DistanceField implements Box2 {
         origin: Vector2;
         size: Vector2;
 
         constructor(origin: Vector2, size: Vector2) {
             this.origin = origin;
             this.size = size;
-        }
 
-        containsVector(u: Vector2): boolean {
-            const left = this.origin[0];
-            const right = this.origin[0] + this.size[0];
-            const top = this.origin[1];
-            const bottom = this.origin[1] + this.size[1];
-            return !(u[0] < left || right < u[0] || u[1] < top || bottom < u[1]);
-        }
+            super((u: Vector2) => {
+                const halfSize = v2.scale(this.size, 0.5);
+                const transformed = v2.subtract(u, v2.add(this.origin, halfSize));
+                const absolute: Vector2 = [Math.abs(transformed[0]), Math.abs(transformed[1])];
+                const distance = v2.subtract(absolute, halfSize);
 
-        nearestBoundaryVectorToVector(u: Vector2): Vector2 {
-            const left = this.origin[0];
-            const right = this.origin[0] + this.size[0];
-            const top = this.origin[1];
-            const bottom = this.origin[1] + this.size[1];
-
-            if (left <= u[0] && u[0] < right) {
-                if (u[1] < top) {
-                    return [u[0], top];
-                }
-                else if (bottom <= u[1]) {
-                    return [u[0], bottom];
-                }
-            }
-            else if (top <= u[1] && u[1] < bottom) {
-                if (u[0] < left) {
-                    return [left, u[1]];
-                }
-                else if (right <= u[0]) {
-                    return [right, u[1]];
-                }
-            } // corners
-            else if (u[0] < left) {
-                if (u[1] < top) {
-                    return [left, top];
-                }
-                else if (bottom <= u[1]) {
-                    return [left, bottom];
-                }
-            }
-            else if (right <= u[0]) {
-                if (u[1] < top) {
-                    return [right, top];
-                }
-                else if (bottom <= u[1]) {
-                    return [right, bottom];
-                }
-            }
-            else if (left <= u[0] && u[0] < right && top <= u[1] && u[1] < bottom) {
-                const dx = u[0] - (left + right) / 2;
-                const dy = u[1] - (top + bottom) / 2;
-                if (Math.abs(dx) * this.size[1] < Math.abs(dy) * this.size[0]) {
-                    if (dx > 0) {
-                        return [right, u[1]];
-                    }
-                    else {
-                        return [left, u[1]];
-                    }
-                }
-                else {
-                    if (dy > 0) {
-                        return [u[0], top];
-                    }
-                    else {
-                        return [u[0], bottom];
-                    }
-                }
-            }
+                const greatestNegativeOrZero = Math.min(Math.max.apply(null, distance), 0.0);
+                const positiveDistances: Vector2 = [Math.max(distance[0], 0.0), Math.max(distance[1], 0.0)];
+                return greatestNegativeOrZero + v2.length(positiveDistances);
+            });
         }
     }
 }

@@ -9,6 +9,7 @@ module GerpSquirrel.Region {
 
     export interface DistanceField extends Region {
         distanceAtVector: (u: Vector2) => number;
+        boundaryPath(stepSize: number, error: number): Array<Vector2>;
         intersect(field: DistanceField, stepSize: number): Array<Vector2>;
     }
 
@@ -16,7 +17,7 @@ module GerpSquirrel.Region {
         return new _DistanceField(distanceFunction);
     }
 
-    class _DistanceField implements DistanceField {
+    export class _DistanceField implements DistanceField {
 
         distanceAtVector: (u: Vector2) => number;
 
@@ -45,6 +46,28 @@ module GerpSquirrel.Region {
             }
 
             return v;
+        }
+
+        boundaryPath(stepSize: number, error: number): Array<Vector2> {
+            const origin = this.nearestBoundaryVectorToVector([0, 0]);
+            var v: Vector2 = v2.add(origin, v2.scale(v2.leftOrthogonal(this.gradientAtVector(origin)), stepSize));
+
+            var points: Array<Vector2> = [];
+
+            // walk around the boundary, counter-clockwise
+            var count = 0;
+            while (v2.length(v2.subtract(origin, v)) > stepSize * 0.5 && count < 1000) {
+                if (this.distanceAtVector(v) > error) {
+                    v = this.nearestBoundaryVectorToVector(v);
+                }
+                else {
+                    points.push(v)
+                    v = v2.add(v, v2.scale(v2.leftOrthogonal(this.gradientAtVector(v)), stepSize));
+                    count++;
+                }
+            }
+
+            return points;
         }
 
         intersect(field: DistanceField, stepSize: number = 10.0): Array<Vector2> {
@@ -78,9 +101,12 @@ module GerpSquirrel.Region {
         });
     }
 
-    export function union(r: DistanceField, s: DistanceField): DistanceField {
+    export function union(...fields: Array<DistanceField>): DistanceField {
         return DistanceFieldMake((u: Vector2) => {
-            return Math.min(r.distanceAtVector(u), s.distanceAtVector(u));
+            //return Math.min(r.distanceAtVector(u), s.distanceAtVector(u));
+            return Math.min.apply(null, fields.map((field) => {
+                return field.distanceAtVector(u);
+            }));
         });
     }
 

@@ -65,27 +65,35 @@ module Client {
     }
 
     export function init(element: HTMLCanvasElement) {
+        const renderLoop = gs.RunLoopMake(1000 / 30);
 
         const mouseInput = GerpSquirrel.Input.MouseInputMake();
         mouseInput.attachToElement(element);
 
-        var regionCenter: Vector2 = [0, 0];
-
         var mouseVector: Vector2 = [0, 0];
         mouseInput.moveSource().addReceiver((mouseInfo) => {
-            console.log(mouseInfo.position);
             mouseVector = mouseInfo.position;
             largeCircleRegion.center = mouseVector;
-            regionCenter = mouseVector;
+            circleRegion.center = mouseVector;
         });
 
-        var circleRegion = region.DistanceFieldMake((u: Vector2) => {
-            return v2.length(v2.subtract(u, regionCenter)) - 80;
-        });
-        var staticRegion = region.DistanceFieldMake((u: Vector2) => {
-            return v2.length(v2.subtract(u, [element.width/2, element.height/2])) - 100;
-        });
+        var boxRegion = region.Box2Make([element.width / 4, element.height / 4], [element.width / 4, element.height / 4]);
+        var t = 0;
+        renderLoop.scheduleUpdateFunction(() => {
+            boxRegion.origin = [
+                Math.cos(t) * 50 + element.width / 4,
+                Math.sin(t) * 50 + element.height / 4
+            ];
+            t += 0.1;
+        }, gs.forever);
+            
+        var staticRegion = region.union(
+            region.CircleMake([element.width / 2, element.height / 2], 100),
+            region.CircleMake([element.width / 4, element.height / 4], 100),
+            boxRegion
+        );
 
+        var circleRegion = region.CircleMake([0, 0], 80);
         var largeCircleRegion = region.CircleMake([0, 0], 240);
         var canvasRegion = region.Box2Make([0, 0], [element.width, element.height]);
 
@@ -100,8 +108,6 @@ module Client {
             context.fillRect(item.position[0], item.position[1], 4, 4);
         });
 
-        const renderLoop = gs.RunLoopMake(1000 / 30);
-
         mouseInput.clickSource().addReceiver(() => {
             renderLoop.removeAllRenderFunctions();
             renderLoop.removeAllUpdateFunctions(); 
@@ -109,20 +115,40 @@ module Client {
 
         renderLoop.scheduleRenderFunction((timeIntoFrame: number) => {
             context.clearRect(0, 0, element.width, element.height);
-            context.fillStyle = "#2a2a2a";
-            context.fillRect(0, 0, element.width, element.height);
+            context.beginPath();
+            staticRegion.boundaryPath(20, 20).forEach((u, index, array) => {
+                if (index == 0) {
+                    context.moveTo(u[0], u[1]);
+                }
+                else {
+                    context.lineTo(u[0], u[1]);
+                }
+                if (index == array.length - 1) {
+                    context.lineTo(array[0][0], array[0][1]);
+                }
+            });
+            context.stroke();
+
+            context.beginPath();
+            context.arc(circleRegion.center[0], circleRegion.center[1], circleRegion.radius, 0, Math.PI * 2);
+            context.stroke();
+            context.beginPath();
+            context.arc(largeCircleRegion.center[0], largeCircleRegion.center[1], largeCircleRegion.radius, 0, Math.PI * 2);
+            context.stroke();
+
+
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction(innerRenderer.run, gs.forever);
         renderLoop.scheduleRenderFunction(outerRenderer.run, gs.forever);
 
-        renderLoop.scheduleUpdateFunction(() => {
-            const points = circleRegion.intersect(staticRegion, 40.0);
-            points.forEach((point) => {
-                context.fillStyle = "#000000";
-                context.fillRect(point[0], point[1], 8, 8);
-            });
-        }, gs.forever);
+        // renderLoop.scheduleUpdateFunction(() => {
+        //     const points = circleRegion.intersect(staticRegion, 40.0);
+        //     points.forEach((point) => {
+        //         context.fillStyle = "#000000";
+        //         context.fillRect(point[0], point[1], 8, 8);
+        //     });
+        // }, gs.forever);
 
         renderLoop.scheduleUpdateFunction(() => {
             // inner item
@@ -132,7 +158,7 @@ module Client {
             renderLoop.scheduleUpdateFunction(() => {
                 dynamics.update(item);
                 constraint.constrainToRegionComplement(item, circleRegion);
-                constraint.constrainToRegionComplement(item, staticRegion);
+                constraint.constrainToRegion(item, staticRegion);
                 constraint.constrainToRegion(item, largeCircleRegion);
                 dynamics.applyForce(item, v2.scale(v2.normalize(v2.subtract(mouseVector, item.position)), 0.4));                
                 dynamics.applyForce(item, v2.scale(item.velocity, -0.005));                

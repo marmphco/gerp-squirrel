@@ -47,7 +47,7 @@ module GerpSquirrel.Vector {
 
 module GerpSquirrel.Vector2 {
 
-    export interface Vector2 {
+    export interface Vector2 extends Array<number> {
         0: number;
         1: number;
     }
