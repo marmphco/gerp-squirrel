@@ -4,7 +4,6 @@
 /// <reference path="../engine/render/render.ts" />
 /// <reference path="../engine/input/mouse.ts" />
 /// <reference path="../engine/math/region.ts" />
-/// <reference path="../engine/math/distance-field-region.ts" />
 /// <reference path="../engine/math/constraint.ts" />
 /// <reference path="../engine/dynamics/dynamics.ts" />
 /// <reference path="../client/gerp.ts" />
@@ -65,7 +64,7 @@ module Client {
     }
 
     export function init(element: HTMLCanvasElement) {
-        const renderLoop = gs.RunLoopMake(1000 / 30);
+        const renderLoop = gs.RunLoopMake(1000 / 20);
 
         const mouseInput = GerpSquirrel.Input.MouseInputMake();
         mouseInput.attachToElement(element);
@@ -87,15 +86,17 @@ module Client {
             t += 0.1;
         }, gs.forever);
             
-        var staticRegion = region.union(
-            region.CircleMake([element.width / 2, element.height / 2], 100),
-            region.CircleMake([element.width / 4, element.height / 4], 100),
-            boxRegion
-        );
-
-        var circleRegion = region.CircleMake([0, 0], 80);
-        var largeCircleRegion = region.CircleMake([0, 0], 240);
+        var circleRegion = region.CircleMake([0, 0], 40);
+        var largeCircleRegion = region.CircleMake([0, 0], 120);
         var canvasRegion = region.Box2Make([0, 0], [element.width, element.height]);
+
+        var staticRegion = region.union(region.repeat(region.union(
+                region.CircleMake([element.width / 2, element.height / 2], 100),
+                region.CircleMake([element.width / 4, element.height / 4], 100),
+                boxRegion
+            ), [100, 50], [400, 300]), 
+            largeCircleRegion
+        );
 
         const context = element.getContext('2d');
 
@@ -115,19 +116,6 @@ module Client {
 
         renderLoop.scheduleRenderFunction((timeIntoFrame: number) => {
             context.clearRect(0, 0, element.width, element.height);
-            context.beginPath();
-            staticRegion.boundaryPath(20, 20).forEach((u, index, array) => {
-                if (index == 0) {
-                    context.moveTo(u[0], u[1]);
-                }
-                else {
-                    context.lineTo(u[0], u[1]);
-                }
-                if (index == array.length - 1) {
-                    context.lineTo(array[0][0], array[0][1]);
-                }
-            });
-            context.stroke();
 
             context.beginPath();
             context.arc(circleRegion.center[0], circleRegion.center[1], circleRegion.radius, 0, Math.PI * 2);
@@ -136,19 +124,10 @@ module Client {
             context.arc(largeCircleRegion.center[0], largeCircleRegion.center[1], largeCircleRegion.radius, 0, Math.PI * 2);
             context.stroke();
 
-
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction(innerRenderer.run, gs.forever);
         renderLoop.scheduleRenderFunction(outerRenderer.run, gs.forever);
-
-        // renderLoop.scheduleUpdateFunction(() => {
-        //     const points = circleRegion.intersect(staticRegion, 40.0);
-        //     points.forEach((point) => {
-        //         context.fillStyle = "#000000";
-        //         context.fillRect(point[0], point[1], 8, 8);
-        //     });
-        // }, gs.forever);
 
         renderLoop.scheduleUpdateFunction(() => {
             // inner item
@@ -159,7 +138,6 @@ module Client {
                 dynamics.update(item);
                 constraint.constrainToRegionComplement(item, circleRegion);
                 constraint.constrainToRegion(item, staticRegion);
-                constraint.constrainToRegion(item, largeCircleRegion);
                 dynamics.applyForce(item, v2.scale(v2.normalize(v2.subtract(mouseVector, item.position)), 0.4));                
                 dynamics.applyForce(item, v2.scale(item.velocity, -0.005));                
             }, gs.forever);
@@ -170,7 +148,6 @@ module Client {
 
             renderLoop.scheduleUpdateFunction(() => {
                 dynamics.update(outerItem);
-                constraint.constrainToRegionComplement(outerItem, largeCircleRegion);
                 constraint.constrainToRegionComplement(outerItem, staticRegion);
                 constraint.constrainToRegion(outerItem, canvasRegion);
                 dynamics.applyForce(outerItem, v2.scale(v2.normalize(v2.subtract(mouseVector, outerItem.position)), 0.4));                

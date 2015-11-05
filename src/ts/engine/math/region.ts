@@ -1,5 +1,4 @@
 /// <reference path="../math/vector.ts" />
-/// <reference path="../math/distance-field-region.ts" />
 
 module GerpSquirrel.Region {
 
@@ -9,6 +8,98 @@ module GerpSquirrel.Region {
     export interface Region {
         containsVector(u: Vector2): boolean;
         nearestBoundaryVectorToVector(u: Vector2): Vector2;
+    }
+
+    export interface DistanceField extends Region {
+        distanceAtVector: (u: Vector2) => number;
+        boundaryPath(stepSize: number, error: number): Array<Vector2>;
+    }
+
+    export function DistanceFieldMake(distanceFunction: (u: Vector2) => number): DistanceField {
+        return new _DistanceField(distanceFunction);
+    }
+
+    class _DistanceField implements DistanceField {
+
+        distanceAtVector: (u: Vector2) => number;
+
+        constructor(distanceFunction: (u: Vector2) => number) {
+            this.distanceAtVector = distanceFunction;
+        }
+
+        gradientAtVector(u: Vector2): Vector2 {
+            return [
+                this.distanceAtVector([u[0] + 0.5, u[1]]) - this.distanceAtVector([u[0] - 0.5, u[1]]),
+                this.distanceAtVector([u[0], u[1] + 0.5]) - this.distanceAtVector([u[0], u[1] - 0.5])
+            ];
+        }
+
+        containsVector(u: Vector2): boolean {
+            return this.distanceAtVector(u) < 0;
+        }
+
+        nearestBoundaryVectorToVector(u: Vector2, steps: number = 2): Vector2 {
+            // Ah yeah janky gradient descent
+            var v: Vector2 = [u[0], u[1]];
+            for (var i = 0; i < steps; i++) {
+                const distance = this.distanceAtVector(v);
+                const gradient = this.gradientAtVector(v);
+                v = v2.add(v, v2.scale(gradient, -distance));
+            }
+
+            return v;
+        }
+
+        boundaryPath(stepSize: number, error: number): Array<Vector2> {
+            const origin = this.nearestBoundaryVectorToVector([0, 0]);
+            var v: Vector2 = v2.add(origin, v2.scale(v2.leftOrthogonal(this.gradientAtVector(origin)), stepSize));
+
+            var points: Array<Vector2> = [];
+
+            // walk around the boundary, counter-clockwise
+            var count = 0;
+            while (v2.length(v2.subtract(origin, v)) > stepSize * 0.5 && count < 1000) {
+                if (this.distanceAtVector(v) > error) {
+                    v = this.nearestBoundaryVectorToVector(v);
+                }
+                else {
+                    points.push(v)
+                    v = v2.add(v, v2.scale(v2.leftOrthogonal(this.gradientAtVector(v)), stepSize));
+                    count++;
+                }
+            }
+
+            return points;
+        }
+    }
+
+    export function inverse(r: DistanceField): DistanceField {
+        return DistanceFieldMake((u: Vector2) => {
+            return -r.distanceAtVector(u);
+        });
+    }
+
+    export function union(...fields: Array<DistanceField>): DistanceField {
+        return DistanceFieldMake((u: Vector2) => {
+            return Math.min.apply(null, fields.map((field) => {
+                return field.distanceAtVector(u);
+            }));
+        });
+    }
+
+    export function intersection(...fields: Array<DistanceField>): DistanceField {
+        return DistanceFieldMake((u: Vector2) => {
+            return Math.max.apply(null, fields.map((field) => {
+                return field.distanceAtVector(u);
+            }));
+        });
+    }
+
+    export function repeat(field: DistanceField, origin: Vector2, size: Vector2): DistanceField {
+        return DistanceFieldMake((u: Vector2) => {
+            const v: Vector2 = v2.add([u[0] % size[0], u[1] % size[1]], origin);
+            return field.distanceAtVector(v);
+        });
     }
 
     export interface Circle extends DistanceField {
