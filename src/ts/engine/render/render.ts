@@ -1,4 +1,4 @@
-module GerpSquirrel {
+module GerpSquirrel.Render {
 
     export interface Interpolatable<T> {
         interpolate: (timeIntoFrame: number) => T;

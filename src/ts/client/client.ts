@@ -11,6 +11,7 @@
 import gs = GerpSquirrel;
 import v2 = GerpSquirrel.Vector2;
 import ev = GerpSquirrel.Event;
+import render = GerpSquirrel.Render;
 import region = GerpSquirrel.Region;
 import constraint = GerpSquirrel.Constraint;
 import dynamics = GerpSquirrel.Dynamics;
@@ -21,7 +22,7 @@ module Client {
         position: v2.Vector2;
     }
 
-    class Test implements gs.Interpolatable<RenderInfo>, dynamics.Actor {
+    class Test implements render.Interpolatable<RenderInfo>, dynamics.Actor {
         position: v2.Vector2;
         velocity: v2.Vector2;
         acceleration: v2.Vector2;
@@ -78,11 +79,11 @@ module Client {
 
         const context = element.getContext('2d');
 
-        const innerRenderer = gs.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
+        const innerRenderer = render.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
             context.fillStyle = "#22aabb";
             context.fillRect(item.position[0], item.position[1], 4, 4);
         });
-        const outerRenderer = gs.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
+        const outerRenderer = render.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
             context.fillStyle = "#dd11bb";
             context.fillRect(item.position[0], item.position[1], 4, 4);
         });
