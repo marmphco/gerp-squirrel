@@ -41,28 +41,6 @@ module Client {
         }
     }
 
-    function buffer<T>(n: number, f: (element: Array<T>) => void): (T) => void {
-        var buffer = [];
-        return (element: T) => {
-            buffer.push(element);
-            if (buffer.length == n) {
-                f(buffer);
-                buffer = [];
-            }
-        };
-    }
-
-    function rollingWindow<T>(n: number, f: (element: Array<T>) => void): (T) => void {
-        var buffer = [];
-        return (element: T) => {
-            buffer.push(element);
-            if (buffer.length == n) {
-                f(buffer);
-                buffer.shift();
-            }
-        };
-    }
-
     export function init(element: HTMLCanvasElement) {
         const renderLoop = gs.RunLoopMake(1000 / 20);
 

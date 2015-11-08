@@ -51,4 +51,26 @@ module GerpSquirrel.Event {
     export function StreamMake<T>(): Stream<T> {
         return new _Stream<T>();
     }
+
+    function buffer<T>(n: number, f: (element: Array<T>) => void): (T) => void {
+        var buffer = [];
+        return (element: T) => {
+            buffer.push(element);
+            if (buffer.length == n) {
+                f(buffer);
+                buffer = [];
+            }
+        };
+    }
+
+    function rollingWindow<T>(n: number, f: (element: Array<T>) => void): (T) => void {
+        var buffer = [];
+        return (element: T) => {
+            buffer.push(element);
+            if (buffer.length == n) {
+                f(buffer);
+                buffer.shift();
+            }
+        };
+    }
 }
