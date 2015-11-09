@@ -125,16 +125,16 @@ module GerpSquirrel.Region {
         }
     }
 
-    export interface Box2 extends DistanceField {
+    export interface Box extends DistanceField {
         origin: Vector2;
         size: Vector2;
     }
 
-    export function Box2Make(origin: Vector2, size: Vector2): Box2 {
-        return new _Box2(origin, size);
+    export function BoxMake(origin: Vector2, size: Vector2): Box {
+        return new _Box(origin, size);
     }
 
-    class _Box2 extends _DistanceField implements Box2 {
+    class _Box extends _DistanceField implements Box {
         origin: Vector2;
         size: Vector2;
 

@@ -55,7 +55,7 @@ module Client {
             circleRegion.center = mouseVector;
         });
 
-        var boxRegion = region.Box2Make([element.width / 4, element.height / 4], [element.width / 4, element.height / 4]);
+        var boxRegion = region.BoxMake([element.width / 4, element.height / 4], [element.width / 4, element.height / 4]);
         var t = 0;
         renderLoop.scheduleUpdateFunction(() => {
             boxRegion.origin = [
@@ -67,7 +67,7 @@ module Client {
             
         var circleRegion = region.CircleMake([0, 0], 40);
         var largeCircleRegion = region.CircleMake([0, 0], 120);
-        var canvasRegion = region.Box2Make([0, 0], [element.width, element.height]);
+        var canvasRegion = region.BoxMake([0, 0], [element.width, element.height]);
 
         var staticRegion = region.union(region.repeat(region.union(
                 region.CircleMake([element.width / 2, element.height / 2], 100),
