@@ -47,10 +47,7 @@ module GerpSquirrel.Vector {
 
 module GerpSquirrel.Vector2 {
 
-    export interface Vector2 extends Array<number> {
-        0: number;
-        1: number;
-    }
+    export type Vector2 = [number, number];
 
     export const zero: Vector2 = [0, 0];
 
@@ -84,6 +81,11 @@ module GerpSquirrel.Vector2 {
 
     export function project(u: Vector2, onto: Vector2): Vector2 {
         return scale(normalize(onto), dot(u, onto) / length(onto));
+    }
+
+    // returns a signed value
+    export function projectedLength(u: Vector2, onto: Vector2): number {
+        return dot(u, onto) / length(onto);
     }
 
     export function leftOrthogonal(u: Vector2): Vector2 {

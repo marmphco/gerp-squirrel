@@ -1,12 +1,12 @@
 module GerpSquirrel.Render {
 
-    export interface Interpolatable<T> {
-        interpolate: (timeIntoFrame: number) => T;
+    export interface Renderable<T> {
+        renderInfo: (timeIntoFrame: number) => T;
     }
 
     export interface Renderer<T> {
         run: RenderFunction;
-        addItem: (item: Interpolatable<T>) => void;
+        addItem: (item: Renderable<T>) => void;
     }
 
     export interface Canvas2DRenderFunction<T> {
@@ -14,15 +14,15 @@ module GerpSquirrel.Render {
     }
 
     export function Canvas2DRendererMake<T>(context: CanvasRenderingContext2D, render: Canvas2DRenderFunction<T>): Renderer<T> {
-        var items: Array<Interpolatable<T>> = [];
+        var items: Array<Renderable<T>> = [];
 
         return {
             run: function(timeIntoFrame: number) {
-                items.forEach(function(item: Interpolatable<T>) {
-                    render(context, item.interpolate(timeIntoFrame));
+                items.forEach(function(item: Renderable<T>) {
+                    render(context, item.renderInfo(timeIntoFrame));
                 });
             },
-            addItem: function(item: Interpolatable<T>) {
+            addItem: function(item: Renderable<T>) {
                 items.push(item);
             }
         };

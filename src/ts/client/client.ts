@@ -6,6 +6,7 @@
 /// <reference path="../engine/math/region.ts" />
 /// <reference path="../engine/math/constraint.ts" />
 /// <reference path="../engine/dynamics/dynamics.ts" />
+/// <reference path="../engine/dynamics/collision.ts" />
 /// <reference path="../client/gerp.ts" />
 
 import gs = GerpSquirrel;
@@ -15,126 +16,96 @@ import render = GerpSquirrel.Render;
 import region = GerpSquirrel.Region;
 import constraint = GerpSquirrel.Constraint;
 import dynamics = GerpSquirrel.Dynamics;
+import collision = GerpSquirrel.Collision;
 
 module Client {
 
-    interface RenderInfo {
+    interface CircleRenderInfo {
         position: v2.Vector2;
+        radius: number;
     }
 
-    class Test implements render.Interpolatable<RenderInfo>, dynamics.Actor {
+    class Circle implements render.Renderable<CircleRenderInfo>, dynamics.Actor {
         position: v2.Vector2;
         velocity: v2.Vector2;
         acceleration: v2.Vector2;
         mass: number;
+        radius: number;
 
         constructor() {
-            this.position = [Math.random() * 100, Math.random() * 100]
-            this.velocity = [Math.random() * 2 + 2, Math.random() * 2 + 2]
+            this.position = [Math.random() * 400, Math.random() * 400];
+            this.velocity = [Math.random() * 2 + 2, Math.random() * 2 + 2];
             this.acceleration = [0, 0];
             this.mass = 1;
+            this.radius = 100;
         }
 
-        interpolate(timeIntoFrame: number) {
+        renderInfo(timeIntoFrame: number) {
             return {
-                position: v2.add(this.position, v2.scale(this.velocity, timeIntoFrame))
+                position: this.position,//v2.add(this.position, v2.scale(this.velocity, timeIntoFrame)),
+                radius: this.radius
             }
         }
     }
 
     export function init(element: HTMLCanvasElement) {
+        const context = element.getContext('2d');
         const renderLoop = gs.RunLoopMake(1000 / 20);
-
         const mouseInput = GerpSquirrel.Input.MouseInputMake();
         mouseInput.attachToElement(element);
 
-        var mouseVector: Vector2 = [0, 0];
-        mouseInput.moveSource().addReceiver((mouseInfo) => {
-            mouseVector = mouseInfo.position;
-            largeCircleRegion.center = mouseVector;
-            circleRegion.center = mouseVector;
+        const renderer = render.Canvas2DRendererMake(context, (context, item: CircleRenderInfo) => {
+            context.beginPath();
+            context.arc(item.position[0], item.position[1], item.radius, 0, Math.PI * 2);
+            context.stroke();
         });
 
-        var boxRegion = region.BoxMake([element.width / 4, element.height / 4], [element.width / 4, element.height / 4]);
-        var t = 0;
+        renderLoop.scheduleRenderFunction((_) => {
+            context.clearRect(0, 0, element.width, element.height);
+        }, gs.forever);
+
+        const screenBoundsRegion = region.BoxMake([0, 0], [element.width, element.height]);
+
+        var circles: Array<Circle> = [];
         renderLoop.scheduleUpdateFunction(() => {
-            boxRegion.origin = [
-                Math.cos(t) * 50 + element.width / 4,
-                Math.sin(t) * 50 + element.height / 4
-            ];
-            t += 0.1;
+            var circle: Circle = new Circle();
+            renderer.addItem(circle);
+            circles.push(circle);
+
+            renderLoop.scheduleUpdateFunction(() => {
+                dynamics.update(circle);
+                constraint.constrainToRegion(circle, screenBoundsRegion);
+            }, gs.forever);
+                
+        }, gs.repeat(5));
+
+        renderLoop.scheduleUpdateFunction(() => {
+            circles.forEach((circle: Circle) => {
+                circles.forEach((otherCircle: Circle) => {
+
+                    if (circle == otherCircle) return;
+
+                    const connector = v2.subtract(circle.position, otherCircle.position);
+
+                    const diff = (circle.radius + otherCircle.radius) - v2.length(connector);
+                    if (diff >= 0) {
+                        const normal: Vector2 = v2.normalize(connector);
+
+                        circle.position = v2.add(
+                            circle.position, 
+                            v2.scale(normal, diff / 2));
+                        otherCircle.position = v2.add(
+                            otherCircle.position,
+                            v2.scale(normal, -diff / 2));
+
+                        collision.resolveCollision(circle, otherCircle, normal);
+                    }
+                });
+            });
         }, gs.forever);
             
-        var circleRegion = region.CircleMake([0, 0], 40);
-        var largeCircleRegion = region.CircleMake([0, 0], 120);
-        var canvasRegion = region.BoxMake([0, 0], [element.width, element.height]);
+        renderLoop.scheduleRenderFunction(renderer.run, gs.forever);
 
-        var staticRegion = region.union(region.repeat(region.union(
-                region.CircleMake([element.width / 2, element.height / 2], 100),
-                region.CircleMake([element.width / 4, element.height / 4], 100),
-                boxRegion
-            ), [100, 50], [400, 300]), 
-            largeCircleRegion
-        );
-
-        const context = element.getContext('2d');
-
-        const innerRenderer = render.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
-            context.fillStyle = "#22aabb";
-            context.fillRect(item.position[0], item.position[1], 4, 4);
-        });
-        const outerRenderer = render.Canvas2DRendererMake(context, function(context, item: RenderInfo) {
-            context.fillStyle = "#dd11bb";
-            context.fillRect(item.position[0], item.position[1], 4, 4);
-        });
-
-        mouseInput.clickSource().addReceiver(() => {
-            renderLoop.removeAllRenderFunctions();
-            renderLoop.removeAllUpdateFunctions(); 
-        });
-
-        renderLoop.scheduleRenderFunction((timeIntoFrame: number) => {
-            context.clearRect(0, 0, element.width, element.height);
-
-            context.beginPath();
-            context.arc(circleRegion.center[0], circleRegion.center[1], circleRegion.radius, 0, Math.PI * 2);
-            context.stroke();
-            context.beginPath();
-            context.arc(largeCircleRegion.center[0], largeCircleRegion.center[1], largeCircleRegion.radius, 0, Math.PI * 2);
-            context.stroke();
-
-        }, gs.forever);
-
-        renderLoop.scheduleRenderFunction(innerRenderer.run, gs.forever);
-        renderLoop.scheduleRenderFunction(outerRenderer.run, gs.forever);
-
-        renderLoop.scheduleUpdateFunction(() => {
-            // inner item
-            const item = new Test();
-            innerRenderer.addItem(item);
-
-            renderLoop.scheduleUpdateFunction(() => {
-                dynamics.update(item);
-                constraint.constrainToRegionComplement(item, circleRegion);
-                constraint.constrainToRegion(item, staticRegion);
-                dynamics.applyForce(item, v2.scale(v2.normalize(v2.subtract(mouseVector, item.position)), 0.4));                
-                dynamics.applyForce(item, v2.scale(item.velocity, -0.005));                
-            }, gs.forever);
-
-            // outer item
-            const outerItem = new Test();
-            outerRenderer.addItem(outerItem);
-
-            renderLoop.scheduleUpdateFunction(() => {
-                dynamics.update(outerItem);
-                constraint.constrainToRegionComplement(outerItem, staticRegion);
-                constraint.constrainToRegion(outerItem, canvasRegion);
-                dynamics.applyForce(outerItem, v2.scale(v2.normalize(v2.subtract(mouseVector, outerItem.position)), 0.4));                
-                dynamics.applyForce(outerItem, v2.scale(outerItem.velocity, -0.005));                
-            }, gs.forever);
-
-        }, gs.repeat(1000));
-
-        setInterval(renderLoop.run, 1000 / 60);
+        setInterval(renderLoop.run, 1000 / 20);
     }
 }

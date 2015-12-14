@@ -11,6 +11,7 @@ module GerpSquirrel.Dynamics {
         mass: number;
     }
 
+    // needs runge kutta
     export function update(actor: Actor): void {
         actor.velocity = Vector2.add(actor.velocity, actor.acceleration);
         actor.position = Vector2.add(actor.position, actor.velocity);
