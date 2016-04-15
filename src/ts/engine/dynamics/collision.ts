@@ -1,7 +1,6 @@
 /// <reference path="../math/vector.ts" />
 /// <reference path="./dynamics.ts" />
 
-
 module GerpSquirrel.Collision {
     import v2 = GerpSquirrel.Vector2;
     import Vector2 = GerpSquirrel.Vector2.Vector2;

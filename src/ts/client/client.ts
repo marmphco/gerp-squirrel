@@ -4,9 +4,9 @@
 /// <reference path="../engine/render/render.ts" />
 /// <reference path="../engine/input/mouse.ts" />
 /// <reference path="../engine/math/region.ts" />
-/// <reference path="../engine/math/constraint.ts" />
 /// <reference path="../engine/dynamics/dynamics.ts" />
 /// <reference path="../engine/dynamics/collision.ts" />
+/// <reference path="../engine/dynamics/constraint.ts" />
 /// <reference path="../client/gerp.ts" />
 
 import gs = GerpSquirrel;
@@ -20,30 +20,26 @@ import collision = GerpSquirrel.Collision;
 
 module Client {
 
-    interface CircleRenderInfo {
-        position: v2.Vector2;
-        radius: number;
+    interface ThingRenderInfo {
+        vertices: Array<v2.Vector2>;
+        center: Vector2;
     }
 
-    class Circle implements render.Renderable<CircleRenderInfo>, dynamics.Actor {
-        position: v2.Vector2;
-        velocity: v2.Vector2;
-        acceleration: v2.Vector2;
-        mass: number;
-        radius: number;
+    class Thing implements render.Renderable<ThingRenderInfo> {
+        hull: dynamics.ConvexHull;
 
-        constructor() {
-            this.position = [Math.random() * 400, Math.random() * 400];
-            this.velocity = [Math.random() * 2 + 2, Math.random() * 2 + 2];
-            this.acceleration = [0, 0];
-            this.mass = 1;
-            this.radius = 100;
+        constructor(size) {
+            this.hull = dynamics.ConvexHullMake([
+                [0, 0], [size, 0], [size, size], [0, size]
+            ]);
+            this.hull.mass = 1;
+            this.hull.momentOfInertia = this.hull.mass * (size*size + size*size) / 12;
         }
 
         renderInfo(timeIntoFrame: number) {
             return {
-                position: this.position,//v2.add(this.position, v2.scale(this.velocity, timeIntoFrame)),
-                radius: this.radius
+                vertices: dynamics.hullVertices(this.hull),
+                center: this.hull.center
             }
         }
     }
@@ -51,61 +47,76 @@ module Client {
     export function init(element: HTMLCanvasElement) {
         const context = element.getContext('2d');
         const renderLoop = gs.RunLoopMake(1000 / 20);
-        const mouseInput = GerpSquirrel.Input.MouseInputMake();
-        mouseInput.attachToElement(element);
-
-        const renderer = render.Canvas2DRendererMake(context, (context, item: CircleRenderInfo) => {
-            context.beginPath();
-            context.arc(item.position[0], item.position[1], item.radius, 0, Math.PI * 2);
-            context.stroke();
-        });
+        const screenBoundsRegion = region.BoxMake([0, 0], [element.width, element.height]);
 
         renderLoop.scheduleRenderFunction((_) => {
             context.clearRect(0, 0, element.width, element.height);
         }, gs.forever);
 
-        const screenBoundsRegion = region.BoxMake([0, 0], [element.width, element.height]);
+        const thingRenderer = render.Canvas2DRendererMake(context, (context, info: ThingRenderInfo) => {
+            context.beginPath();
+            context.moveTo(info.vertices[0][0], info.vertices[0][1]);
+            for (var i = 1; i < info.vertices.length; i++) {
+                const vertex = info.vertices[i];
+                context.lineTo(vertex[0], vertex[1]);
+            }
+            context.lineTo(info.vertices[0][0], info.vertices[0][1]);
+            context.stroke();
 
-        var circles: Array<Circle> = [];
-        renderLoop.scheduleUpdateFunction(() => {
-            var circle: Circle = new Circle();
-            renderer.addItem(circle);
-            circles.push(circle);
+            context.fillRect(info.center[0], info.center[1], 4, 4);
+        });
+        renderLoop.scheduleRenderFunction(thingRenderer.run, gs.forever);
 
-            renderLoop.scheduleUpdateFunction(() => {
-                dynamics.update(circle);
-                constraint.constrainToRegion(circle, screenBoundsRegion);
-            }, gs.forever);
-                
-        }, gs.repeat(5));
-
-        renderLoop.scheduleUpdateFunction(() => {
-            circles.forEach((circle: Circle) => {
-                circles.forEach((otherCircle: Circle) => {
-
-                    if (circle == otherCircle) return;
-
-                    const connector = v2.subtract(circle.position, otherCircle.position);
-
-                    const diff = (circle.radius + otherCircle.radius) - v2.length(connector);
-                    if (diff >= 0) {
-                        const normal: Vector2 = v2.normalize(connector);
-
-                        circle.position = v2.add(
-                            circle.position, 
-                            v2.scale(normal, diff / 2));
-                        otherCircle.position = v2.add(
-                            otherCircle.position,
-                            v2.scale(normal, -diff / 2));
-
-                        collision.resolveCollision(circle, otherCircle, normal);
-                    }
-                });
-            });
+        const thing: Thing = new Thing(100);
+        thing.hull.center = [300, 300];
+        thing.hull.rotation = 0.3;
+        thingRenderer.addItem(thing);
+        renderLoop.scheduleUpdateFunction((timestep) => {
+            thing.hull.velocity = v2.scale(thing.hull.velocity, 0.95);
+            thing.hull.angularVelocity = thing.hull.angularVelocity * 0.95;
+            dynamics.updateHull(thing.hull, timestep);
         }, gs.forever);
-            
-        renderLoop.scheduleRenderFunction(renderer.run, gs.forever);
 
-        setInterval(renderLoop.run, 1000 / 20);
+        const mouseInput = GerpSquirrel.Input.MouseInputMake();
+        mouseInput.attachToElement(element);
+
+        var dragging = false;
+        var startDragOffset: Vector2 = [0, 0];
+        var endOfDrag: Vector2 = [0, 0];
+        mouseInput.downSource().addReceiver((mouseInfo) => {
+            if (dynamics.hullContains(thing.hull, mouseInfo.position)) {
+                dragging = true;
+                startDragOffset = dynamics.toHullSpace(thing.hull, mouseInfo.position);
+                endOfDrag = mouseInfo.position;
+            }
+        });
+        mouseInput.upSource().addReceiver((mouseInfo) => {
+            dragging = false;
+        });
+        mouseInput.moveSource().addReceiver((mouseInfo) => {
+            if (dragging) {
+                endOfDrag = mouseInfo.position;
+            }
+        });
+
+        renderLoop.scheduleUpdateFunction(() => {
+            if (dragging) {
+                const startOfDrag = dynamics.fromHullSpace(thing.hull, startDragOffset);
+                const force = v2.scale(v2.subtract(endOfDrag, startOfDrag), 10.0);
+                dynamics.applyForcetoHull(thing.hull, startOfDrag, force);
+            }
+        }, gs.forever);
+
+        renderLoop.scheduleRenderFunction((_) => {
+            if (dragging) {
+                const startOfDrag = dynamics.fromHullSpace(thing.hull, startDragOffset);
+                context.beginPath();
+                context.moveTo(startOfDrag[0], startOfDrag[1]);
+                context.lineTo(endOfDrag[0], endOfDrag[1]);
+                context.stroke();
+            }
+        }, gs.forever);
+
+        setInterval(renderLoop.run, 1000 / 30);
     }
 }

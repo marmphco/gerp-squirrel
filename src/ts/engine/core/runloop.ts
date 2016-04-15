@@ -1,16 +1,16 @@
 module GerpSquirrel {
     export interface RenderFunction {
-        (timeIntoFrame: number): void;
+        (timestep: number): void;
     }
 
     export interface UpdateFunction {
-        (): void;
+        (timestep: number): void;
     }
 
     export interface RunLoop {
         run(): void;
-        scheduleUpdateFunction(func: () => void, removalPredicate: () => boolean): void;
-        scheduleRenderFunction(func: (number) => void, removalPredicate: () => boolean): void;
+        scheduleUpdateFunction(func: UpdateFunction, removalPredicate: () => boolean): void;
+        scheduleRenderFunction(func: RenderFunction, removalPredicate: () => boolean): void;
         removeAllUpdateFunctions(): void;
         removeAllRenderFunctions(): void;
     }
@@ -43,7 +43,7 @@ module GerpSquirrel {
                 
                 while (elapsedTime >= updateInterval) {
                     updateFunctions = updateFunctions.filter((context) => {
-                        context.item();
+                        context.item(updateInterval/1000);
                         return context.removalPredicate();
                     }).concat(pendingUpdateFunctions);
                     pendingUpdateFunctions = [];
@@ -51,13 +51,13 @@ module GerpSquirrel {
                     elapsedTime -= updateInterval;
                 }
             },
-            scheduleUpdateFunction: function(func: () => void, removalPredicate: () => boolean) {
+            scheduleUpdateFunction: function(func: UpdateFunction, removalPredicate: () => boolean) {
                 pendingUpdateFunctions.push({
                     item: func,
                     removalPredicate: removalPredicate
                 });
             },
-            scheduleRenderFunction: function(func: (number) => void, removalPredicate: () => boolean) {
+            scheduleRenderFunction: function(func: RenderFunction, removalPredicate: () => boolean) {
                 pendingRenderFunctions.push({
                     item: func,
                     removalPredicate: removalPredicate

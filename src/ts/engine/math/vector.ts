@@ -47,6 +47,8 @@ module GerpSquirrel.Vector {
 
 module GerpSquirrel.Vector2 {
 
+    export enum Orientation {Clockwise, CounterClockwise}
+
     export type Vector2 = [number, number];
 
     export const zero: Vector2 = [0, 0];
@@ -61,6 +63,15 @@ module GerpSquirrel.Vector2 {
 
     export function dot(u: Vector2, v: Vector2): number {
         return u[0] * v[0] + u[1] * v[1];
+    }
+
+    export function orientation(u: Vector2, v: Vector2): Orientation {
+        if (dot(clockwiseOrthogonal(u), v) >= 0) {
+            return Orientation.Clockwise;
+        }
+        else {
+            return Orientation.CounterClockwise;
+        }
     }
 
     export function scale(u: Vector2, scale: number): Vector2 {
@@ -88,6 +99,11 @@ module GerpSquirrel.Vector2 {
         return dot(u, onto) / length(onto);
     }
 
+    export function clockwiseOrthogonal(u: Vector2): Vector2 {
+        return [u[1], -u[0]];
+    }
+
+    // rename counterClockwiseOrthogonal
     export function leftOrthogonal(u: Vector2): Vector2 {
         return [-u[1], u[0]];
     }
