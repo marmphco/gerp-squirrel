@@ -72,8 +72,8 @@ module Client {
         thing.hull.rotation = 0.3;
         thingRenderer.addItem(thing);
         renderLoop.scheduleUpdateFunction((timestep) => {
-            thing.hull.velocity = v2.scale(thing.hull.velocity, 0.95);
-            thing.hull.angularVelocity = thing.hull.angularVelocity * 0.95;
+            //thing.hull.velocity = v2.scale(thing.hull.velocity, 0.95);
+            //thing.hull.angularVelocity = thing.hull.angularVelocity * 0.95;
             dynamics.updateHull(thing.hull, timestep);
         }, gs.forever);
 
@@ -102,9 +102,10 @@ module Client {
         renderLoop.scheduleUpdateFunction(() => {
             if (dragging) {
                 const startOfDrag = dynamics.fromHullSpace(thing.hull, startDragOffset);
-                const force = v2.scale(v2.subtract(endOfDrag, startOfDrag), 10.0);
+                const force = v2.scale(v2.subtract(endOfDrag, startOfDrag), 40.0);
                 dynamics.applyForcetoHull(thing.hull, startOfDrag, force);
             }
+            dynamics.applyForcetoHull(thing.hull, thing.hull.center, [0, 1.0]);
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction((_) => {
