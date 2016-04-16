@@ -32,21 +32,21 @@ module Client {
             this.hull = dynamics.ConvexHullMake([
                 [0, 0], [size, 0], [size, size], [0, size]
             ]);
-            this.hull.mass = 1;
-            this.hull.momentOfInertia = this.hull.mass * (size*size + size*size) / 12;
+            this.hull.state.mass = 1;
+            this.hull.state.momentOfInertia = this.hull.state.mass * (size*size + size*size) / 12;
         }
 
         renderInfo(timeIntoFrame: number) {
             return {
                 vertices: dynamics.hullVertices(this.hull),
-                center: this.hull.center
+                center: this.hull.state.center
             }
         }
     }
 
     export function init(element: HTMLCanvasElement) {
         const context = element.getContext('2d');
-        const renderLoop = gs.RunLoopMake(1000 / 20);
+        const renderLoop = gs.RunLoopMake(1000 / 30);
         const screenBoundsRegion = region.BoxMake([0, 0], [element.width, element.height]);
 
         renderLoop.scheduleRenderFunction((_) => {
@@ -68,12 +68,12 @@ module Client {
         renderLoop.scheduleRenderFunction(thingRenderer.run, gs.forever);
 
         const thing: Thing = new Thing(100);
-        thing.hull.center = [300, 300];
-        thing.hull.rotation = 0.3;
+        thing.hull.state.center = [300, 300];
+        thing.hull.state.rotation = 0.3;
         thingRenderer.addItem(thing);
         renderLoop.scheduleUpdateFunction((timestep) => {
-            //thing.hull.velocity = v2.scale(thing.hull.velocity, 0.95);
-            //thing.hull.angularVelocity = thing.hull.angularVelocity * 0.95;
+            //thing.hull.state.velocity = v2.scale(thing.hull.state.velocity, 0.95);
+            //thing.hull.state.angularVelocity = thing.hull.state.angularVelocity * 0.95;
             dynamics.updateHull(thing.hull, timestep);
         }, gs.forever);
 
@@ -86,7 +86,7 @@ module Client {
         mouseInput.downSource().addReceiver((mouseInfo) => {
             if (dynamics.hullContains(thing.hull, mouseInfo.position)) {
                 dragging = true;
-                startDragOffset = dynamics.toHullSpace(thing.hull, mouseInfo.position);
+                startDragOffset = dynamics.toHullSpace(thing.hull.state, mouseInfo.position);
                 endOfDrag = mouseInfo.position;
             }
         });
@@ -101,16 +101,14 @@ module Client {
 
         renderLoop.scheduleUpdateFunction(() => {
             if (dragging) {
-                const startOfDrag = dynamics.fromHullSpace(thing.hull, startDragOffset);
-                const force = v2.scale(v2.subtract(endOfDrag, startOfDrag), 40.0);
-                dynamics.applyForcetoHull(thing.hull, startOfDrag, force);
+                dynamics.applyForcetoHull(thing.hull, startDragOffset, endOfDrag, 200.0, 20.0);
             }
-            dynamics.applyForcetoHull(thing.hull, thing.hull.center, [0, 1.0]);
+           // dynamics.applyForcetoHull(thing.hull, thing.hull.center, [0, 100.0]);
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction((_) => {
             if (dragging) {
-                const startOfDrag = dynamics.fromHullSpace(thing.hull, startDragOffset);
+                const startOfDrag = dynamics.fromHullSpace(thing.hull.state, startDragOffset);
                 context.beginPath();
                 context.moveTo(startOfDrag[0], startOfDrag[1]);
                 context.lineTo(endOfDrag[0], endOfDrag[1]);

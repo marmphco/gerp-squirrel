@@ -65,6 +65,10 @@ module GerpSquirrel.Vector2 {
         return u[0] * v[0] + u[1] * v[1];
     }
 
+    export function crossLength(u: Vector2, v: Vector2): number {
+        return u[0] * v[1] - u[1] * v[0];
+    }
+
     export function orientation(u: Vector2, v: Vector2): Orientation {
         if (dot(clockwiseOrthogonal(u), v) >= 0) {
             return Orientation.Clockwise;
