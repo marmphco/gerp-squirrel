@@ -210,6 +210,10 @@ module GerpSquirrel.Dynamics {
         return hull.vertices.map((vertex) => fromHullSpace(hull.state, vertex));
     }
 
+    export function hullVerticesInterpolated(hull: ConvexHull, timestep: number): Array<Vector2> {
+        return hull.vertices.map((vertex) => fromHullSpaceInterpolated(hull.state, vertex, timestep));
+    }
+
     export function toHullSpace(state: DynamicState, u: Vector2): Vector2 {
         const translated = v2.subtract(u, state.center);
         const sin = Math.sin(-state.rotation);
@@ -219,6 +223,16 @@ module GerpSquirrel.Dynamics {
             -sin * translated[0] + cos * translated[1],
         ];
         return rotated;
+    }
+
+    export function fromHullSpaceInterpolated(state: DynamicState, u: Vector2, timestep: number): Vector2 {
+        const sin = Math.sin(state.rotation + timestep * state.angularVelocity);
+        const cos = Math.cos(state.rotation + timestep * state.angularVelocity);
+        const rotated: Vector2 = [
+            cos * u[0] + sin * u[1],
+            -sin * u[0] + cos * u[1],
+        ];
+        return v2.add(v2.add(state.center, v2.scale(state.velocity, timestep)), rotated);
     }
 
     export function fromHullSpace(state: DynamicState, u: Vector2): Vector2 {

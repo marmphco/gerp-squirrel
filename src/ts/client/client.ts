@@ -38,7 +38,7 @@ module Client {
 
         renderInfo(timeIntoFrame: number) {
             return {
-                vertices: dynamics.hullVertices(this.hull),
+                vertices: dynamics.hullVerticesInterpolated(this.hull, timeIntoFrame * 0.033),
                 center: this.hull.state.center
             }
         }
@@ -71,10 +71,16 @@ module Client {
         thing.hull.state.center = [300, 300];
         thing.hull.state.rotation = 0.3;
         thingRenderer.addItem(thing);
+
+        const other: Thing = new Thing(100);
+        other.hull.state.center = [500, 500];
+        other.hull.state.rotation = 0.2;
+        thingRenderer.addItem(other);
         renderLoop.scheduleUpdateFunction((timestep) => {
             //thing.hull.state.velocity = v2.scale(thing.hull.state.velocity, 0.95);
             //thing.hull.state.angularVelocity = thing.hull.state.angularVelocity * 0.95;
             dynamics.updateHull(thing.hull, timestep);
+            dynamics.updateHull(other.hull, timestep);
         }, gs.forever);
 
         const mouseInput = GerpSquirrel.Input.MouseInputMake();
@@ -101,9 +107,10 @@ module Client {
 
         renderLoop.scheduleUpdateFunction(() => {
             if (dragging) {
-                dynamics.applyForcetoHull(thing.hull, startDragOffset, endOfDrag, 200.0, 20.0);
+                dynamics.applyForcetoHull(thing.hull, startDragOffset, endOfDrag, 2000.0, 40.0);
             }
-           // dynamics.applyForcetoHull(thing.hull, thing.hull.center, [0, 100.0]);
+            //dynamics.applyForcetoHull(thing.hull, [0, 0], other.hull.state.center, 200.0, 20.0);
+            dynamics.applyForcetoHull(other.hull, [30, 30], thing.hull.state.center, 2000.0, 40.0);
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction((_) => {
