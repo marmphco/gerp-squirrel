@@ -6,7 +6,6 @@
 /// <reference path="../engine/math/region.ts" />
 /// <reference path="../engine/dynamics/dynamics.ts" />
 /// <reference path="../engine/dynamics/collision.ts" />
-/// <reference path="../engine/dynamics/constraint.ts" />
 /// <reference path="../client/gerp.ts" />
 
 import gs = GerpSquirrel;
@@ -14,7 +13,6 @@ import v2 = GerpSquirrel.Vector2;
 import ev = GerpSquirrel.Event;
 import render = GerpSquirrel.Render;
 import region = GerpSquirrel.Region;
-import constraint = GerpSquirrel.Constraint;
 import dynamics = GerpSquirrel.Dynamics;
 import collision = GerpSquirrel.Collision;
 
@@ -32,14 +30,14 @@ module Client {
             this.hull = dynamics.ConvexHullMake([
                 [0, 0], [size, 0], [size, size], [0, size]
             ]);
-            this.hull.state.mass = 1;
-            this.hull.state.momentOfInertia = this.hull.state.mass * (size*size + size*size) / 12;
+            this.hull.actor.mass = 1;
+            this.hull.actor.momentOfInertia = this.hull.actor.mass * (size*size + size*size) / 12;
         }
 
         renderInfo(timeIntoFrame: number) {
             return {
-                vertices: dynamics.hullVerticesInterpolated(this.hull, timeIntoFrame * 0.033),
-                center: this.hull.state.center
+                vertices: dynamics.hullVertices(this.hull),
+                center: this.hull.actor.center
             }
         }
     }
@@ -68,17 +66,17 @@ module Client {
         renderLoop.scheduleRenderFunction(thingRenderer.run, gs.forever);
 
         const thing: Thing = new Thing(100);
-        thing.hull.state.center = [300, 300];
-        thing.hull.state.rotation = 0.3;
+        dynamics.setActorCenter(thing.hull.actor, [300, 300]);
+        thing.hull.actor.orientation = 0.3;
         thingRenderer.addItem(thing);
 
         const other: Thing = new Thing(100);
-        other.hull.state.center = [500, 500];
-        other.hull.state.rotation = 0.2;
+        dynamics.setActorCenter(other.hull.actor, [500, 500]);
+        other.hull.actor.orientation = 0.2;
         thingRenderer.addItem(other);
         renderLoop.scheduleUpdateFunction((timestep) => {
-            //thing.hull.state.velocity = v2.scale(thing.hull.state.velocity, 0.95);
-            //thing.hull.state.angularVelocity = thing.hull.state.angularVelocity * 0.95;
+            //thing.hull.actor.velocity = v2.scale(thing.hull.actor.velocity, 0.95);
+            //thing.hull.actor.angularVelocity = thing.hull.actor.angularVelocity * 0.95;
             dynamics.updateHull(thing.hull, timestep);
             dynamics.updateHull(other.hull, timestep);
         }, gs.forever);
@@ -92,7 +90,7 @@ module Client {
         mouseInput.downSource().addReceiver((mouseInfo) => {
             if (dynamics.hullContains(thing.hull, mouseInfo.position)) {
                 dragging = true;
-                startDragOffset = dynamics.toHullSpace(thing.hull.state, mouseInfo.position);
+                startDragOffset = dynamics.toActorSpace(thing.hull.actor, mouseInfo.position);
                 endOfDrag = mouseInfo.position;
             }
         });
@@ -107,15 +105,17 @@ module Client {
 
         renderLoop.scheduleUpdateFunction(() => {
             if (dragging) {
-                dynamics.applyForcetoHull(thing.hull, startDragOffset, endOfDrag, 2000.0, 40.0);
+                const actorSpaceStart = dynamics.fromActorSpace(thing.hull.actor, startDragOffset);
+                const force = v2.scale(v2.subtract(endOfDrag, actorSpaceStart), 20.0);
+                dynamics.applyForceToActor(thing.hull.actor, actorSpaceStart, force);
             }
             //dynamics.applyForcetoHull(thing.hull, [0, 0], other.hull.state.center, 200.0, 20.0);
-            dynamics.applyForcetoHull(other.hull, [30, 30], thing.hull.state.center, 2000.0, 40.0);
+            //dynamics.applyForceToActor(other.hull, [30, 30], thing.hull.actor.center, 2000.0, 40.0);
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction((_) => {
             if (dragging) {
-                const startOfDrag = dynamics.fromHullSpace(thing.hull.state, startDragOffset);
+                const startOfDrag = dynamics.fromActorSpace(thing.hull.actor, startDragOffset);
                 context.beginPath();
                 context.moveTo(startOfDrag[0], startOfDrag[1]);
                 context.lineTo(endOfDrag[0], endOfDrag[1]);

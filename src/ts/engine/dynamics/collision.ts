@@ -10,20 +10,20 @@ module GerpSquirrel.Collision {
         const otherAxis = v2.leftOrthogonal(normal);
 
         const projectedVelocities: [number, number] = [
-            v2.projectedLength(actor1.velocity, normal),
-            v2.projectedLength(actor2.velocity, normal)
+            v2.projectedLength(Dynamics.actorVelocity(actor1), normal),
+            v2.projectedLength(Dynamics.actorVelocity(actor2), normal)
         ];
         const masses: [number, number] = [actor1.mass, actor2.mass];
         
         const newVelocities = solveVelocities(masses, projectedVelocities);
         
-        actor1.velocity = v2.add(
-            v2.project(actor1.velocity, otherAxis), 
-            v2.scale(normal, newVelocities[0]));
+        Dynamics.setActorVelocity(actor1, v2.add(
+            v2.project(Dynamics.actorVelocity(actor1), otherAxis), 
+            v2.scale(normal, newVelocities[0])));
 
-        actor2.velocity = v2.add(
-            v2.project(actor2.velocity, otherAxis),
-            v2.scale(normal, newVelocities[1]));
+        Dynamics.setActorVelocity(actor2, v2.add(
+            v2.project(Dynamics.actorVelocity(actor2), otherAxis),
+            v2.scale(normal, newVelocities[1])));
     }
 
     export function solveVelocities(masses: [number, number], velocities: [number, number]): [number, number] {
