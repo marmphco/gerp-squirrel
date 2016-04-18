@@ -19,7 +19,7 @@ import collision = GerpSquirrel.Collision;
 module Client {
 
     interface ThingRenderInfo {
-        vertices: Array<v2.Vector2>;
+        vertices: Array<Vector2>;
         center: Vector2;
     }
 
@@ -37,7 +37,7 @@ module Client {
         renderInfo(timeIntoFrame: number) {
             return {
                 vertices: dynamics.hullVertices(this.hull),
-                center: this.hull.actor.center
+                center: this.hull.actor.center()
             }
         }
     }
@@ -66,19 +66,17 @@ module Client {
         renderLoop.scheduleRenderFunction(thingRenderer.run, gs.forever);
 
         const thing: Thing = new Thing(100);
-        dynamics.setActorCenter(thing.hull.actor, [300, 300]);
-        thing.hull.actor.orientation = 0.3;
+        thing.hull.actor.setCenter([300, 300]);
+        thing.hull.actor.setOrientation(0.3);
         thingRenderer.addItem(thing);
 
         const other: Thing = new Thing(100);
-        dynamics.setActorCenter(other.hull.actor, [500, 500]);
-        other.hull.actor.orientation = 0.2;
+        other.hull.actor.setCenter([500, 500]);
+        other.hull.actor.setOrientation(0.2);
         thingRenderer.addItem(other);
         renderLoop.scheduleUpdateFunction((timestep) => {
-            //thing.hull.actor.velocity = v2.scale(thing.hull.actor.velocity, 0.95);
-            //thing.hull.actor.angularVelocity = thing.hull.actor.angularVelocity * 0.95;
-            dynamics.updateHull(thing.hull, timestep);
-            dynamics.updateHull(other.hull, timestep);
+            thing.hull.actor.advance(timestep);
+            other.hull.actor.advance(timestep);
         }, gs.forever);
 
         const mouseInput = GerpSquirrel.Input.MouseInputMake();
@@ -90,7 +88,7 @@ module Client {
         mouseInput.downSource().addReceiver((mouseInfo) => {
             if (dynamics.hullContains(thing.hull, mouseInfo.position)) {
                 dragging = true;
-                startDragOffset = dynamics.toActorSpace(thing.hull.actor, mouseInfo.position);
+                startDragOffset = thing.hull.actor.toLocalSpace(mouseInfo.position);
                 endOfDrag = mouseInfo.position;
             }
         });
@@ -105,17 +103,16 @@ module Client {
 
         renderLoop.scheduleUpdateFunction(() => {
             if (dragging) {
-                const actorSpaceStart = dynamics.fromActorSpace(thing.hull.actor, startDragOffset);
-                const force = v2.scale(v2.subtract(endOfDrag, actorSpaceStart), 20.0);
-                dynamics.applyForceToActor(thing.hull.actor, actorSpaceStart, force);
+                const worldSpaceStartOfDrag = thing.hull.actor.fromLocalSpace(startDragOffset);
+                const velocityAtPoint = thing.hull.actor.velocityAt(worldSpaceStartOfDrag);
+                const force = v2.subtract(v2.scale(v2.subtract(endOfDrag, worldSpaceStartOfDrag), 80.0), v2.scale(velocityAtPoint, 200.0));
+                thing.hull.actor.applyForce(worldSpaceStartOfDrag, force);
             }
-            //dynamics.applyForcetoHull(thing.hull, [0, 0], other.hull.state.center, 200.0, 20.0);
-            //dynamics.applyForceToActor(other.hull, [30, 30], thing.hull.actor.center, 2000.0, 40.0);
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction((_) => {
             if (dragging) {
-                const startOfDrag = dynamics.fromActorSpace(thing.hull.actor, startDragOffset);
+                const startOfDrag = thing.hull.actor.fromLocalSpace(startDragOffset);
                 context.beginPath();
                 context.moveTo(startOfDrag[0], startOfDrag[1]);
                 context.lineTo(endOfDrag[0], endOfDrag[1]);
