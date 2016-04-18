@@ -14,7 +14,7 @@ gulp.task('clean', function() {
 });
 
 gulp.task('process-js', function() {
-    return gulp.src('src/ts/**/*.ts')
+    return gulp.src('src/ts/client/client.ts')
         .pipe(tsc({
             out: 'gerp-squirrel.js'
         })).js
