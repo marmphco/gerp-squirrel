@@ -101,12 +101,17 @@ module Client {
             }
         });
 
+        var collisionInfo: collision.CollisionInfo = null;
         renderLoop.scheduleUpdateFunction(() => {
             if (dragging) {
                 const worldSpaceStartOfDrag = thing.hull.actor.fromLocalSpace(startDragOffset);
                 const velocityAtPoint = thing.hull.actor.velocityAt(worldSpaceStartOfDrag);
                 const force = v2.subtract(v2.scale(v2.subtract(endOfDrag, worldSpaceStartOfDrag), 80.0), v2.scale(velocityAtPoint, 200.0));
                 thing.hull.actor.applyForce(worldSpaceStartOfDrag, force);
+            }
+            collisionInfo = collision.hullIntersection(thing.hull, other.hull);
+            if (collisionInfo) {
+                console.log("jfdskljsda")
             }
         }, gs.forever);
 
@@ -116,6 +121,14 @@ module Client {
                 context.beginPath();
                 context.moveTo(startOfDrag[0], startOfDrag[1]);
                 context.lineTo(endOfDrag[0], endOfDrag[1]);
+                context.stroke();
+            }
+            if (collisionInfo) {
+                context.fillRect(collisionInfo.position[0], collisionInfo.position[1], 4, 4);
+                context.beginPath();
+                context.moveTo(collisionInfo.position[0], collisionInfo.position[1]);
+                const endPoint = v2.add(v2.scale(collisionInfo.normal, collisionInfo.depth), collisionInfo.position);
+                context.lineTo(endPoint[0], endPoint[1]);
                 context.stroke();
             }
         }, gs.forever);

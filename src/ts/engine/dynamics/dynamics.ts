@@ -37,6 +37,29 @@ module GerpSquirrel.Dynamics {
         return hull.vertices.map((vertex) => hull.actor.fromLocalSpace(vertex));
     }
 
+    export function hullProjected(hull: ConvexHull, axis: Vector2): [Vector2, Vector2, Vector2] {
+        var projectedSpan: Vector2 = [Number.MAX_VALUE, Number.MIN_VALUE];
+        var minVertex: Vector2;
+        var maxVertex: Vector2;
+
+        const vertices = hullVertices(hull);
+
+        vertices.forEach((vertex) => {
+            const projectedVertex = v2.projectedLength(vertex, axis);
+
+            if (projectedVertex < projectedSpan[0]) {
+                projectedSpan[0] = projectedVertex;
+                minVertex = vertex;
+            }
+            if (projectedVertex > projectedSpan[1]) {
+                projectedSpan[1] = projectedVertex;
+                maxVertex = vertex;
+            }
+        });
+
+        return [projectedSpan, minVertex, maxVertex];
+    }
+
     export function hullContains(hull: ConvexHull, u: Vector2): boolean {
         // convert point to hull space
         const convertedPoint = hull.actor.toLocalSpace(u);
