@@ -34,8 +34,9 @@ module GerpSquirrel.Dynamics {
         }
 
         setCenter(center: Vector2) {
+            var velocity = this.velocity();
             this._center = center;
-            this._previousCenter = center;
+            this.setVelocity(velocity);
         }
 
         velocity(): Vector2 {
@@ -57,8 +58,9 @@ module GerpSquirrel.Dynamics {
         }
 
         setOrientation(orientation: number) {
+            var angularVelocity = this.angularVelocity();
             this._orientation = orientation;
-            this._previousOrientation = orientation;
+            this.setAngularVelocity(angularVelocity);
         }
 
         angularVelocity(): number {
@@ -108,7 +110,16 @@ module GerpSquirrel.Dynamics {
             const torque = v2.crossLength(force, fromCenter);
 
             this._acceleration = Vector2.add(this._acceleration, v2.scale(force, 1.0 / this.mass));
-            this._angularAcceleration = this._angularAcceleration + torque / this.momentOfInertia;
+            //this._angularAcceleration = this._angularAcceleration + torque / this.momentOfInertia;
+        }
+
+        // from and impulse are in world space
+        applyImpulse(from: Vector2, impulse: Vector2) {
+            const fromCenter = v2.subtract(from, this._center);
+            const angularImpulse = v2.crossLength(impulse, fromCenter);
+
+            this.setVelocity(Vector2.add(this.velocity(), v2.scale(impulse, 1.0 / this.mass)));
+            //this.setAngularVelocity(this.angularVelocity() + angularImpulse / this.momentOfInertia);
         }
     }
 }

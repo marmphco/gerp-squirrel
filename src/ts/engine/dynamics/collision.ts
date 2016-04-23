@@ -8,26 +8,6 @@ module GerpSquirrel.Collision {
     import Actor = GerpSquirrel.Dynamics.Actor;
     import ConvexHull = GerpSquirrel.Dynamics.ConvexHull;
 
-    // export function resolveCollision(actor1: Actor, actor2: Actor, normal: Vector2): void {
-    //     const otherAxis = v2.leftOrthogonal(normal);
-
-    //     const projectedVelocities: [number, number] = [
-    //         v2.projectedLength(actor1.velocity(), normal),
-    //         v2.projectedLength(actor2.velocity(), normal)
-    //     ];
-    //     const masses: [number, number] = [actor1.mass, actor2.mass];
-        
-    //     const newVelocities = solveVelocities(masses, projectedVelocities);
-        
-    //     actor1.setVelocity(v2.add(
-    //         v2.project(actor1.velocity(), otherAxis), 
-    //         v2.scale(normal, newVelocities[0])));
-
-    //     actor2.setVelocity(v2.add(
-    //         v2.project(actor2.velocity(), otherAxis),
-    //         v2.scale(normal, newVelocities[1])));
-    // }
-
     // export function solveVelocities(masses: [number, number], velocities: [number, number]): [number, number] {
     //     const totalMass = masses[0] + masses[1];
     //     return [
@@ -36,23 +16,81 @@ module GerpSquirrel.Collision {
     //     ]
     // }
 
+    export class CollisionInfo {
+        positions: [Vector2, Vector2];
+        depth: number; // magnitude of 
+
+        constructor(positions: [Vector2, Vector2] = [[0, 0], [0, 0]],
+                    depth: number = Number.MAX_VALUE) {
+
+            this.positions = positions;
+            this.depth = depth;
+        }
+
+        axis(): Vector2 {
+            return v2.subtract(this.positions[0], this.positions[1]);
+        }
+
+        normal(): Vector2 {
+            return v2.normalize(this.axis());
+        }
+
+        tangent(): Vector2 {
+            return v2.leftOrthogonal(this.normal());
+        }
+
+        reverse(): CollisionInfo {
+            return new CollisionInfo([this.positions[1], this.positions[0]],
+                                     this.depth);
+        }
+
+        toLocalSpace(u: Vector2): Vector2 {
+            return [
+                // TODO jee we need rightOrthogonal
+                v2.projectedLength(u, this.tangent()),
+                v2.projectedLength(u, this.normal())
+            ];
+        }
+
+        fromLocalSpace(u: Vector2): Vector2 {
+            return [
+                v2.projectedLength(u, this.toLocalSpace([1, 0])),
+                v2.projectedLength(u, this.toLocalSpace([0, 1]))
+            ];
+        }
+    }
+
     export interface CollisionResponder {
         (info: CollisionInfo, actor1: Actor, actor2: Actor): void;
     }
 
-    export interface CollisionInfo {
-        positions: [Vector2, Vector2];
-        depth: number;
-    }
+    export function resolveCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
+        // TODO these positions may be inaccurate after projection phase...
+        const localVelocity1 = info.toLocalSpace(actor1.velocityAt(info.positions[0]));
+        const localVelocity2 = info.toLocalSpace(actor2.velocityAt(info.positions[1]));
 
-    export function projectOutOfCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
-        const axis = v2.subtract(info.positions[0], info.positions[1]);
+        const relativeVelocity = v2.subtract(localVelocity1, localVelocity2);
+
+        const impulseMagnitude1 = 2 * actor2.mass * (localVelocity2[1] - localVelocity1[1]) / (actor1.mass + actor2.mass);
+        const impulseMagnitude2 = 2 * actor1.mass * (localVelocity1[1] - localVelocity2[1]) / (actor1.mass + actor2.mass);
+
+        const impulse1 = v2.scale(info.normal(), impulseMagnitude1);
+        const impulse2 = v2.scale(info.normal(), impulseMagnitude2);
+
+        // project out of collision
+        const axis = info.axis();
+
+        // TODO this 0.5 needs to be weighted by mass also
         actor1.setCenter(v2.add(actor1.center(), v2.scale(axis, 0.5)));
         actor2.setCenter(v2.add(actor2.center(), v2.scale(axis, -0.5)));
+
+        // apply impulses
+        actor1.applyImpulse(info.positions[0], impulse1);
+        actor2.applyImpulse(info.positions[1], impulse2);
     }
 
-    export function resolveCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
-        const axis = v2.subtract(info.positions[0], info.positions[1]);
+    export function inaccurateResolve(actor1: Actor, actor2: Actor, info: CollisionInfo) {
+        const axis = info.axis();
         actor1._center = v2.add(actor1.center(), v2.scale(axis, 0.5));
         actor2._center = v2.add(actor2.center(), v2.scale(axis, -0.5));
     }
@@ -61,10 +99,7 @@ module GerpSquirrel.Collision {
     export function hullIntersection(hull0: ConvexHull, hull1: ConvexHull): CollisionInfo {
 
         const checkProjectionAxes = function(hull: ConvexHull, otherHull: ConvexHull): CollisionInfo {
-            var minimumDepthCollision: CollisionInfo = {
-                positions: [[0, 0], [0, 0]],
-                depth: Number.MAX_VALUE
-            };
+            var minimumDepthCollision: CollisionInfo = new CollisionInfo();
 
             const vertices = dynamics.hullVertices(hull);
 
@@ -89,18 +124,20 @@ module GerpSquirrel.Collision {
 
                 if (depthA < depthB) {
                     if (depthA < minimumDepthCollision.depth) {
-                        minimumDepthCollision = {
-                            positions: [otherProjectionInfo[2], v2.add(otherProjectionInfo[2], v2.scale(edgeNormal, -depthA))],
-                            depth: depthA
-                        }
+                        const positions: [Vector2, Vector2] = [
+                            otherProjectionInfo[2], 
+                            v2.add(otherProjectionInfo[2], v2.scale(edgeNormal, -depthA))
+                        ];
+                        minimumDepthCollision = new CollisionInfo(positions, depthA);
                     }
                 }
                 else {
                     if (depthB < minimumDepthCollision.depth) {
-                        minimumDepthCollision = {
-                            positions: [otherProjectionInfo[1], v2.add(otherProjectionInfo[1], v2.scale(edgeNormal, depthB))],
-                            depth: depthB
-                        }
+                        const positions: [Vector2, Vector2] = [
+                            otherProjectionInfo[1],
+                            v2.add(otherProjectionInfo[1], v2.scale(edgeNormal, depthB))
+                        ];
+                        minimumDepthCollision = new CollisionInfo(positions, depthB);
                     }
                 }
             }
@@ -122,11 +159,7 @@ module GerpSquirrel.Collision {
             return minimumDepthCollision0;
         }
         else {
-            const tmp = minimumDepthCollision1.positions[0];
-            minimumDepthCollision1.positions[0] = minimumDepthCollision1.positions[1];
-            minimumDepthCollision1.positions[1] = tmp;
-
-            return minimumDepthCollision1;
+            return minimumDepthCollision1.reverse();
         }
     }
 }

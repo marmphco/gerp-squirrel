@@ -26,11 +26,11 @@ module Client {
     class Thing implements render.Renderable<ThingRenderInfo> {
         hull: dynamics.ConvexHull;
 
-        constructor(size) {
+        constructor(size: number, mass: number = 1) {
             this.hull = dynamics.ConvexHullMake([
                 [0, 0], [size, 0], [size, size], [0, size]
             ]);
-            this.hull.actor.mass = 1;
+            this.hull.actor.mass = mass;
             this.hull.actor.momentOfInertia = this.hull.actor.mass * (size*size + size*size) / 12;
         }
 
@@ -67,7 +67,7 @@ module Client {
 
         const thing: Thing = new Thing(100);
         thing.hull.actor.setCenter([300, 300]);
-        thing.hull.actor.setOrientation(0.3);
+        thing.hull.actor.setOrientation(Math.PI / 4);
         thingRenderer.addItem(thing);
 
         const other: Thing = new Thing(100);
@@ -76,10 +76,10 @@ module Client {
         thingRenderer.addItem(other);
 
         const walls: Array<Thing> = [
-            new Thing(1000),
-            new Thing(1000),
-            new Thing(1000),
-            new Thing(1000),
+            new Thing(1000, 999999),
+            new Thing(1000, 999999),
+            new Thing(1000, 999999),
+            new Thing(1000, 999999),
         ];
         walls[0].hull.actor.setCenter([element.width / 2, -500]);
         walls[1].hull.actor.setCenter([element.width + 500, element.height / 2]);
@@ -123,19 +123,23 @@ module Client {
             }
             collisionInfo = collision.hullIntersection(thing.hull, other.hull);
             if (collisionInfo) {
-                collision.projectOutOfCollision(thing.hull.actor, other.hull.actor, collisionInfo);
+                collision.resolveCollision(thing.hull.actor, other.hull.actor, collisionInfo);
             }
 
             walls.forEach((wall) => {
                 var collisionData = collision.hullIntersection(wall.hull, thing.hull);
                 if (collisionData) {
-                    const axis = v2.subtract(collisionData.positions[1], collisionData.positions[0]);
-                    thing.hull.actor._center = v2.add(thing.hull.actor.center(), v2.scale(axis, 1));
+                    collision.resolveCollision(wall.hull.actor, thing.hull.actor, collisionData);
+
+                    //const axis = v2.subtract(collisionData.positions[1], collisionData.positions[0]);
+                    //thing.hull.actor._center = v2.add(thing.hull.actor.center(), v2.scale(axis, 1));
                 }
                 collisionData = collision.hullIntersection(wall.hull, other.hull);
                 if (collisionData) {
-                    const axis = v2.subtract(collisionData.positions[1], collisionData.positions[0]);
-                    other.hull.actor._center = v2.add(other.hull.actor.center(), v2.scale(axis, 1));
+                    collision.resolveCollision(wall.hull.actor, other.hull.actor, collisionData);
+
+                    //const axis = v2.subtract(collisionData.positions[1], collisionData.positions[0]);
+                    //other.hull.actor._center = v2.add(other.hull.actor.center(), v2.scale(axis, 1));
                 }
             })
 
