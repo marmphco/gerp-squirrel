@@ -39,8 +39,8 @@ module GerpSquirrel.Dynamics {
 
     export function hullProjected(hull: ConvexHull, axis: Vector2): [Vector2, Vector2, Vector2] {
         var projectedSpan: Vector2 = [Number.MAX_VALUE, Number.MIN_VALUE];
-        var minVertex: Vector2;
-        var maxVertex: Vector2;
+        var minVertex: Vector2 = [0, 0];
+        var maxVertex: Vector2 = [0, 0];
 
         const vertices = hullVertices(hull);
 

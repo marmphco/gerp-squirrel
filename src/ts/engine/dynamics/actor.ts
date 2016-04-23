@@ -7,14 +7,14 @@ module GerpSquirrel.Dynamics {
 
     export class Actor {
         mass: number;
-        private _center: Vector2;
-        private _previousCenter: Vector2;
-        private _acceleration: Vector2;
+        _center: Vector2;
+        _previousCenter: Vector2;
+        _acceleration: Vector2;
 
         momentOfInertia: number;
-        private _orientation: number;
-        private _previousOrientation: number;
-        private _angularAcceleration: number;
+        _orientation: number;
+        _previousOrientation: number;
+        _angularAcceleration: number;
 
         constructor(mass: number, momentOfInertia: number) {
             this.mass = mass;

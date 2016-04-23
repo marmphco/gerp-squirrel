@@ -74,6 +74,18 @@ module Client {
         other.hull.actor.setCenter([500, 500]);
         other.hull.actor.setOrientation(0.2);
         thingRenderer.addItem(other);
+
+        const walls: Array<Thing> = [
+            new Thing(1000),
+            new Thing(1000),
+            new Thing(1000),
+            new Thing(1000),
+        ];
+        walls[0].hull.actor.setCenter([element.width / 2, -500]);
+        walls[1].hull.actor.setCenter([element.width + 500, element.height / 2]);
+        walls[2].hull.actor.setCenter([element.width / 2, element.height + 500]);
+        walls[3].hull.actor.setCenter([-500, element.height / 2]);
+
         renderLoop.scheduleUpdateFunction((timestep) => {
             thing.hull.actor.advance(timestep);
             other.hull.actor.advance(timestep);
@@ -111,8 +123,22 @@ module Client {
             }
             collisionInfo = collision.hullIntersection(thing.hull, other.hull);
             if (collisionInfo) {
-                console.log("jfdskljsda")
+                collision.projectOutOfCollision(thing.hull.actor, other.hull.actor, collisionInfo);
             }
+
+            walls.forEach((wall) => {
+                var collisionData = collision.hullIntersection(wall.hull, thing.hull);
+                if (collisionData) {
+                    const axis = v2.subtract(collisionData.positions[1], collisionData.positions[0]);
+                    thing.hull.actor._center = v2.add(thing.hull.actor.center(), v2.scale(axis, 1));
+                }
+                collisionData = collision.hullIntersection(wall.hull, other.hull);
+                if (collisionData) {
+                    const axis = v2.subtract(collisionData.positions[1], collisionData.positions[0]);
+                    other.hull.actor._center = v2.add(other.hull.actor.center(), v2.scale(axis, 1));
+                }
+            })
+
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction((_) => {
@@ -124,11 +150,13 @@ module Client {
                 context.stroke();
             }
             if (collisionInfo) {
-                context.fillRect(collisionInfo.position[0], collisionInfo.position[1], 4, 4);
+                context.fillStyle = "#ff0000";
+                context.fillRect(collisionInfo.positions[0][0], collisionInfo.positions[0][1], 4, 4);
+                context.fillStyle = "#00ff00";
+                context.fillRect(collisionInfo.positions[1][0], collisionInfo.positions[1][1], 4, 4);
                 context.beginPath();
-                context.moveTo(collisionInfo.position[0], collisionInfo.position[1]);
-                const endPoint = v2.add(v2.scale(collisionInfo.normal, collisionInfo.depth), collisionInfo.position);
-                context.lineTo(endPoint[0], endPoint[1]);
+                context.moveTo(collisionInfo.positions[0][0], collisionInfo.positions[0][1]);
+                context.lineTo(collisionInfo.positions[1][0], collisionInfo.positions[1][1]);
                 context.stroke();
             }
         }, gs.forever);

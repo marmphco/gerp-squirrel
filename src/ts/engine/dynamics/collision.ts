@@ -3,6 +3,7 @@
 
 module GerpSquirrel.Collision {
     import v2 = GerpSquirrel.Vector2;
+    import dynamics = GerpSquirrel.Dynamics;
     import Vector2 = GerpSquirrel.Vector2.Vector2;
     import Actor = GerpSquirrel.Dynamics.Actor;
     import ConvexHull = GerpSquirrel.Dynamics.ConvexHull;
@@ -35,107 +36,97 @@ module GerpSquirrel.Collision {
     //     ]
     // }
 
+    export interface CollisionResponder {
+        (info: CollisionInfo, actor1: Actor, actor2: Actor): void;
+    }
+
     export interface CollisionInfo {
-        position: Vector2;
-        normal: Vector2;
+        positions: [Vector2, Vector2];
         depth: number;
     }
 
+    export function projectOutOfCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
+        const axis = v2.subtract(info.positions[0], info.positions[1]);
+        actor1.setCenter(v2.add(actor1.center(), v2.scale(axis, 0.5)));
+        actor2.setCenter(v2.add(actor2.center(), v2.scale(axis, -0.5)));
+    }
+
+    export function resolveCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
+        const axis = v2.subtract(info.positions[0], info.positions[1]);
+        actor1._center = v2.add(actor1.center(), v2.scale(axis, 0.5));
+        actor2._center = v2.add(actor2.center(), v2.scale(axis, -0.5));
+    }
+
+    // TODO define NO_COLLISION instead of returning null. 
     export function hullIntersection(hull0: ConvexHull, hull1: ConvexHull): CollisionInfo {
-        // get world space vertices for both hulls
-        // for each edge normal
-        //     get projection of both hulls along normal (use arbitrary base point (0, 0)?)
-        //     compute overlap
-        //     compute collision point is overlapping point on hull that is NOT the normal provider? maybe later
-        //     if not overlapping => early out, no collision
-        //
-        // minimum overlap is collision depth
-        var minimumDepthPenetration: CollisionInfo = {
-            position: [0, 0],
-            normal: [0, 0],
-            depth: Number.MAX_VALUE
-        };
-        const vertices0 = dynamics.hullVertices(hull0);
-        const vertices1 = dynamics.hullVertices(hull1);
 
-        for (var i = 0; i < vertices0.length; i++) {
-            const baseVertex = vertices0[i];
-            const headVertex = vertices0[(i + 1) % vertices0.length];
-            const edge = v2.subtract(headVertex, baseVertex);
-            const edgeNormal = v2.normalize(v2.leftOrthogonal(edge));
+        const checkProjectionAxes = function(hull: ConvexHull, otherHull: ConvexHull): CollisionInfo {
+            var minimumDepthCollision: CollisionInfo = {
+                positions: [[0, 0], [0, 0]],
+                depth: Number.MAX_VALUE
+            };
 
-            const projectionInfo0 = dynamics.hullProjected(hull0, edgeNormal);
-            const projected0 = projectionInfo0[0];
-            const projectionInfo1 = dynamics.hullProjected(hull1, edgeNormal);
-            const projected1 = projectionInfo1[0];
+            const vertices = dynamics.hullVertices(hull);
 
-            if (projected0[0] > projected1[1] || projected0[1] < projected1[0]) {
-                return null
-            }
+            for (var i = 0; i < vertices.length; i++) {
+                const baseVertex = vertices[i];
+                const headVertex = vertices[(i + 1) % vertices.length];
+                const edge = v2.subtract(headVertex, baseVertex);
+                const edgeNormal = v2.normalize(v2.leftOrthogonal(edge));
 
-            //const depth = Math.min(projected1[1] - projected0[0], projected0[1] - projected1[0]);
+                const projectionInfo = dynamics.hullProjected(hull, edgeNormal);
+                const projected = projectionInfo[0];
 
-            const depthA = projected1[1] - projected0[0];
-            const depthB = projected0[1] - projected1[0];
+                const otherProjectionInfo = dynamics.hullProjected(otherHull, edgeNormal);
+                const otherProjected = otherProjectionInfo[0];
 
-            if (depthA < depthB) {
-                if (depthA < minimumDepthPenetration.depth) {
-                    minimumDepthPenetration = {
-                        position: projectionInfo1[2],
-                        normal: v2.scale(edgeNormal, -1),
-                        depth: depthA
+                if (projected[0] > otherProjected[1] || projected[1] < otherProjected[0]) {
+                    return null;
+                }
+
+                const depthA = otherProjected[1] - projected[0];
+                const depthB = projected[1] - otherProjected[0];
+
+                if (depthA < depthB) {
+                    if (depthA < minimumDepthCollision.depth) {
+                        minimumDepthCollision = {
+                            positions: [otherProjectionInfo[2], v2.add(otherProjectionInfo[2], v2.scale(edgeNormal, -depthA))],
+                            depth: depthA
+                        }
+                    }
+                }
+                else {
+                    if (depthB < minimumDepthCollision.depth) {
+                        minimumDepthCollision = {
+                            positions: [otherProjectionInfo[1], v2.add(otherProjectionInfo[1], v2.scale(edgeNormal, depthB))],
+                            depth: depthB
+                        }
                     }
                 }
             }
-            else {
-                if (depthB < minimumDepthPenetration.depth) {
-                    minimumDepthPenetration = {
-                        position: projectionInfo1[1],
-                        normal: edgeNormal,
-                        depth: depthB
-                    }
-                }
-            }
+
+            return minimumDepthCollision;
         }
 
-        for (var i = 0; i < vertices1.length; i++) {
-            const baseVertex = vertices1[i];
-            const headVertex = vertices1[(i + 1) % vertices1.length];
-            const edge = v2.subtract(headVertex, baseVertex);
-            const edgeNormal = v2.normalize(v2.leftOrthogonal(edge));
-
-            const projectionInfo0 = dynamics.hullProjected(hull0, edgeNormal);
-            const projected0 = projectionInfo0[0];
-            const projectionInfo1 = dynamics.hullProjected(hull1, edgeNormal);
-            const projected1 = projectionInfo1[0];
-
-            if (projected0[0] > projected1[1] || projected0[1] < projected1[0]) {
-                return null
-            }
-
-            const depthA = projected0[1] - projected1[0];
-            const depthB = projected1[1] - projected0[0];
-
-            if (depthA < depthB) {
-                if (depthA < minimumDepthPenetration.depth) {
-                    minimumDepthPenetration = {
-                        position: projectionInfo0[2],
-                        normal: v2.scale(edgeNormal, -1),
-                        depth: depthA
-                    }
-                }
-            }
-            else {
-                if (depthB < minimumDepthPenetration.depth) {
-                    minimumDepthPenetration = {
-                        position: projectionInfo0[1],
-                        normal: edgeNormal,
-                        depth: depthB
-                    }
-                }
-            }
+        const minimumDepthCollision0 = checkProjectionAxes(hull0, hull1);
+        if (!minimumDepthCollision0) {
+            return null;
         }
 
-        return minimumDepthPenetration;
+        const minimumDepthCollision1 = checkProjectionAxes(hull1, hull0);
+        if (!minimumDepthCollision1) {
+            return null;
+        }
+
+        if (minimumDepthCollision0.depth < minimumDepthCollision1.depth) {
+            return minimumDepthCollision0;
+        }
+        else {
+            const tmp = minimumDepthCollision1.positions[0];
+            minimumDepthCollision1.positions[0] = minimumDepthCollision1.positions[1];
+            minimumDepthCollision1.positions[1] = tmp;
+
+            return minimumDepthCollision1;
+        }
     }
 }

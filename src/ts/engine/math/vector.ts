@@ -2,6 +2,14 @@ module GerpSquirrel.Vector {
 
     type Vector = Array<number>;
 
+    export function by(n: number, builder: (i: number) => number): Vector {
+        var v = [];
+        for (var i = 0; i < n; i++) {
+            v[i] = builder(i);
+        }
+        return v;
+    }
+
     export function add(u: Vector, v: Vector): Vector {
         return u.map((value: number, i: number) => {
             return value + v[i];
@@ -52,6 +60,10 @@ module GerpSquirrel.Vector2 {
     export type Vector2 = [number, number];
 
     export const zero: Vector2 = [0, 0];
+
+    export function by(builder: (i: number) => number): Vector2 {
+        return [builder(0), builder(1)];
+    }
 
     export function add(u: Vector2, v: Vector2): Vector2 {
         return [u[0] + v[0], u[1] + v[1]];
