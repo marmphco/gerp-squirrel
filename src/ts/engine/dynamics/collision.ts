@@ -36,7 +36,7 @@ module GerpSquirrel.Collision {
         }
 
         tangent(): Vector2 {
-            return v2.leftOrthogonal(this.normal());
+            return v2.clockwiseOrthogonal(this.normal());
         }
 
         reverse(): CollisionInfo {
@@ -104,7 +104,7 @@ module GerpSquirrel.Collision {
         const r1 = v2.subtract(info.positions[0], actor1.center());
         const r2 = v2.subtract(info.positions[1], actor2.center());
 
-        const massFunction = (1 / actor1.mass + 1 / actor2.mass);
+        const massFunction = (1 / actor1.mass + 1 / actor2.mass)
                            + (1 / actor1.momentOfInertia * v2.lengthSquared(r1)) 
                            + (1 / actor2.momentOfInertia * v2.lengthSquared(r2)) 
                            - (1 / actor1.momentOfInertia * v2.dot(r1, normal) * v2.projectedLength(r1, normal)) 
@@ -149,7 +149,7 @@ module GerpSquirrel.Collision {
                 const baseVertex = vertices[i];
                 const headVertex = vertices[(i + 1) % vertices.length];
                 const edge = v2.subtract(headVertex, baseVertex);
-                const edgeNormal = v2.normalize(v2.leftOrthogonal(edge));
+                const edgeNormal = v2.normalize(v2.counterClockwiseOrthogonal(edge));
 
                 const projectionInfo = dynamics.hullProjected(hull, edgeNormal);
                 const projected = projectionInfo[0];

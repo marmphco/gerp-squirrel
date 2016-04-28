@@ -119,8 +119,7 @@ module GerpSquirrel.Vector2 {
         return [u[1], -u[0]];
     }
 
-    // rename counterClockwiseOrthogonal
-    export function leftOrthogonal(u: Vector2): Vector2 {
+    export function counterClockwiseOrthogonal(u: Vector2): Vector2 {
         return [-u[1], u[0]];
     }
 }

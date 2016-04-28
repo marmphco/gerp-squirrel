@@ -52,7 +52,7 @@ module GerpSquirrel.Region {
 
         boundaryPath(stepSize: number, error: number): Array<Vector2> {
             const origin = this.nearestBoundaryVectorToVector([0, 0]);
-            var v: Vector2 = v2.add(origin, v2.scale(v2.leftOrthogonal(this.gradientAtVector(origin)), stepSize));
+            var v: Vector2 = v2.add(origin, v2.scale(v2.counterClockwiseOrthogonal(this.gradientAtVector(origin)), stepSize));
 
             var points: Array<Vector2> = [];
 
@@ -64,7 +64,7 @@ module GerpSquirrel.Region {
                 }
                 else {
                     points.push(v)
-                    v = v2.add(v, v2.scale(v2.leftOrthogonal(this.gradientAtVector(v)), stepSize));
+                    v = v2.add(v, v2.scale(v2.counterClockwiseOrthogonal(this.gradientAtVector(v)), stepSize));
                     count++;
                 }
             }
