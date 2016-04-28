@@ -29,6 +29,8 @@ module GerpSquirrel.Dynamics {
             this._angularAcceleration = 0
         }
 
+        // Getters and Setters
+
         center(): Vector2 {
             return this._center;
         }
@@ -71,6 +73,21 @@ module GerpSquirrel.Dynamics {
             this._previousOrientation = this._orientation - angularVelocity;
         }
 
+        linearEnergy(): number {
+            return 0.5 * this.mass * v2.lengthSquared(this.velocity());
+        }
+
+        angularEnergy(): number {
+            const angularVelocity = this.angularVelocity();
+            return 0.5 * this.momentOfInertia * angularVelocity * angularVelocity;
+        }
+
+        energy(): number {
+            return this.linearEnergy() + this.angularEnergy();
+        }
+
+        // Converting to/from Local Space
+
         toLocalSpace(u: Vector2): Vector2 {
             const translated = v2.subtract(u, this._center);
             const sin = Math.sin(-this._orientation);
@@ -92,6 +109,8 @@ module GerpSquirrel.Dynamics {
             return v2.add(this._center, rotated);
         }
 
+        // Dynamics Methods
+
         advance(timestep: number) {
             const nextPreviousCenter = this._center;
             this._center = v2.add(v2.subtract(v2.scale(this._center, 2), this._previousCenter), v2.scale(this._acceleration, timestep * timestep));
@@ -110,7 +129,7 @@ module GerpSquirrel.Dynamics {
             const torque = v2.crossLength(force, fromCenter);
 
             this._acceleration = Vector2.add(this._acceleration, v2.scale(force, 1.0 / this.mass));
-            //this._angularAcceleration = this._angularAcceleration + torque / this.momentOfInertia;
+            this._angularAcceleration = this._angularAcceleration + torque / this.momentOfInertia;
         }
 
         // from and impulse are in world space
@@ -119,7 +138,7 @@ module GerpSquirrel.Dynamics {
             const angularImpulse = v2.crossLength(impulse, fromCenter);
 
             this.setVelocity(Vector2.add(this.velocity(), v2.scale(impulse, 1.0 / this.mass)));
-            //this.setAngularVelocity(this.angularVelocity() + angularImpulse / this.momentOfInertia);
+            this.setAngularVelocity(this.angularVelocity() + angularImpulse / this.momentOfInertia);
         }
     }
 }

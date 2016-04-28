@@ -64,7 +64,7 @@ module GerpSquirrel.Collision {
         (info: CollisionInfo, actor1: Actor, actor2: Actor): void;
     }
 
-    export function resolveCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
+    export function resolveCollisionLinear(actor1: Actor, actor2: Actor, info: CollisionInfo) {
         // TODO these positions may be inaccurate after projection phase...
         const localVelocity1 = info.toLocalSpace(actor1.velocityAt(info.positions[0]));
         const localVelocity2 = info.toLocalSpace(actor2.velocityAt(info.positions[1]));
@@ -87,6 +87,48 @@ module GerpSquirrel.Collision {
         // apply impulses
         actor1.applyImpulse(info.positions[0], impulse1);
         actor2.applyImpulse(info.positions[1], impulse2);
+    }
+
+    export function resolveCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
+        const energyBefore = actor1.energy() + actor2.energy();
+
+        const axis = info.axis();
+        const normal = info.normal();
+
+        // TODO these positions may be inaccurate after projection phase...
+        const localVelocity1 = info.toLocalSpace(actor1.velocityAt(info.positions[0]));
+        const localVelocity2 = info.toLocalSpace(actor2.velocityAt(info.positions[1]));
+
+        const relativeVelocity = v2.subtract(localVelocity1, localVelocity2);
+
+        const r1 = v2.subtract(info.positions[0], actor1.center());
+        const r2 = v2.subtract(info.positions[1], actor2.center());
+
+        const massFunction = (1 / actor1.mass + 1 / actor2.mass);
+                           + (1 / actor1.momentOfInertia * v2.lengthSquared(r1)) 
+                           + (1 / actor2.momentOfInertia * v2.lengthSquared(r2)) 
+                           - (1 / actor1.momentOfInertia * v2.dot(r1, normal) * v2.projectedLength(r1, normal)) 
+                           - (1 / actor2.momentOfInertia * v2.dot(r2, normal) * v2.projectedLength(r2, normal));
+
+        const restitution = 1;
+
+        const impulseMagnitude1 = (restitution + 1) * (localVelocity2[1] - localVelocity1[1]) / massFunction;
+        const impulseMagnitude2 = (restitution + 1) * (localVelocity1[1] - localVelocity2[1]) / massFunction;
+
+        const impulse1 = v2.scale(normal, impulseMagnitude1);
+        const impulse2 = v2.scale(normal, impulseMagnitude2);
+
+        // project out of collision
+
+        // TODO this 0.5 needs to be weighted by mass also
+        actor1.setCenter(v2.add(actor1.center(), v2.scale(axis, 0.5)));
+        actor2.setCenter(v2.add(actor2.center(), v2.scale(axis, -0.5)));
+
+        // apply impulses
+        actor1.applyImpulse(info.positions[0], impulse1);
+        actor2.applyImpulse(info.positions[1], impulse2);
+
+        console.log("energyDelta", actor1.energy() + actor2.energy() - energyBefore);
     }
 
     export function inaccurateResolve(actor1: Actor, actor2: Actor, info: CollisionInfo) {
