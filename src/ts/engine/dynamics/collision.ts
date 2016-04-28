@@ -1,20 +1,14 @@
 /// <reference path="../math/vector.ts" />
 /// <reference path="./dynamics.ts" />
 
-module GerpSquirrel.Collision {
-    import v2 = GerpSquirrel.Vector2;
-    import dynamics = GerpSquirrel.Dynamics;
-    import Vector2 = GerpSquirrel.Vector2.Vector2;
-    import Actor = GerpSquirrel.Dynamics.Actor;
-    import ConvexHull = GerpSquirrel.Dynamics.ConvexHull;
+module gerpsquirrel.collision {
+    
+    import dynamics = gerpsquirrel.dynamics;
+    import v2 = gerpsquirrel.vector2;
 
-    // export function solveVelocities(masses: [number, number], velocities: [number, number]): [number, number] {
-    //     const totalMass = masses[0] + masses[1];
-    //     return [
-    //         (velocities[0] * (masses[0] - masses[1]) + 2 * masses[1] * velocities[1]) / totalMass,
-    //         (velocities[1] * (masses[1] - masses[0]) + 2 * masses[0] * velocities[0]) / totalMass,
-    //     ]
-    // }
+    import Actor = dynamics.Actor;
+    import ConvexHull = dynamics.ConvexHull;
+    import Vector2 = v2.Vector2;
 
     export class CollisionInfo {
         positions: [Vector2, Vector2];
@@ -46,7 +40,6 @@ module GerpSquirrel.Collision {
 
         toLocalSpace(u: Vector2): Vector2 {
             return [
-                // TODO jee we need rightOrthogonal
                 v2.projectedLength(u, this.tangent()),
                 v2.projectedLength(u, this.normal())
             ];

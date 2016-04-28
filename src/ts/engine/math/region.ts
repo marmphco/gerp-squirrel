@@ -1,9 +1,10 @@
 /// <reference path="../math/vector.ts" />
 
-module GerpSquirrel.Region {
+module gerpsquirrel.region {
 
-    import v2 = GerpSquirrel.Vector2;
-    import Vector2 = GerpSquirrel.Vector2.Vector2;
+    import v2 = gerpsquirrel.vector2;
+    
+    import Vector2 = v2.Vector2;
 
     export interface Region {
         containsVector(u: Vector2): boolean;

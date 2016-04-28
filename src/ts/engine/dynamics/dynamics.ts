@@ -1,10 +1,11 @@
 /// <reference path="../math/vector.ts" />
 /// <reference path="../dynamics/actor.ts" />
 
-module GerpSquirrel.Dynamics {
+module gerpsquirrel.dynamics {
 
-    import Vector2 = GerpSquirrel.Vector2.Vector2;
-    import v2 = GerpSquirrel.Vector2;
+    import v2 = gerpsquirrel.vector2;
+    
+    import Vector2 = gerpsquirrel.vector2.Vector2;
 
     export interface ConvexHull {
         actor: Actor;

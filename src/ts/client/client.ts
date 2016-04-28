@@ -6,17 +6,18 @@
 /// <reference path="../engine/math/region.ts" />
 /// <reference path="../engine/dynamics/dynamics.ts" />
 /// <reference path="../engine/dynamics/collision.ts" />
-/// <reference path="../client/gerp.ts" />
-
-import gs = GerpSquirrel;
-import v2 = GerpSquirrel.Vector2;
-import ev = GerpSquirrel.Event;
-import render = GerpSquirrel.Render;
-import region = GerpSquirrel.Region;
-import dynamics = GerpSquirrel.Dynamics;
-import collision = GerpSquirrel.Collision;
 
 module Client {
+
+    import gs = gerpsquirrel;
+    import v2 = gerpsquirrel.vector2;
+    import ev = gerpsquirrel.event;
+    import render = gerpsquirrel.render;
+    import region = gerpsquirrel.region;
+    import dynamics = gerpsquirrel.dynamics;
+    import collision = gerpsquirrel.collision;
+
+    import Vector2 = v2.Vector2;
 
     interface ThingRenderInfo {
         vertices: Array<Vector2>;
@@ -91,7 +92,7 @@ module Client {
             other.hull.actor.advance(timestep);
         }, gs.forever);
 
-        const mouseInput = GerpSquirrel.Input.MouseInputMake();
+        const mouseInput = gerpsquirrel.input.MouseInputMake();
         mouseInput.attachToElement(element);
 
         var dragging = false;

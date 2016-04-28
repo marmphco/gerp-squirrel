@@ -1,4 +1,4 @@
-module GerpSquirrel.Vector {
+module gerpsquirrel.vector {
 
     type Vector = Array<number>;
 
@@ -53,7 +53,7 @@ module GerpSquirrel.Vector {
     }
 }
 
-module GerpSquirrel.Vector2 {
+module gerpsquirrel.vector2 {
 
     export enum Orientation {Clockwise, CounterClockwise}
 

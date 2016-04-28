@@ -1,9 +1,10 @@
 /// <reference path="../math/vector.ts" />
 
-module GerpSquirrel.Dynamics {
+module gerpsquirrel.dynamics {
 
-    import Vector2 = GerpSquirrel.Vector2.Vector2;
-    import v2 = GerpSquirrel.Vector2;
+    import v2 = gerpsquirrel.vector2;
+
+    import Vector2 = v2.Vector2;
 
     export class Actor {
         mass: number;
@@ -128,7 +129,7 @@ module GerpSquirrel.Dynamics {
             const fromCenter = v2.subtract(from, this._center);
             const torque = v2.crossLength(force, fromCenter);
 
-            this._acceleration = Vector2.add(this._acceleration, v2.scale(force, 1.0 / this.mass));
+            this._acceleration = v2.add(this._acceleration, v2.scale(force, 1.0 / this.mass));
             this._angularAcceleration = this._angularAcceleration + torque / this.momentOfInertia;
         }
 
@@ -137,7 +138,7 @@ module GerpSquirrel.Dynamics {
             const fromCenter = v2.subtract(from, this._center);
             const angularImpulse = v2.crossLength(impulse, fromCenter);
 
-            this.setVelocity(Vector2.add(this.velocity(), v2.scale(impulse, 1.0 / this.mass)));
+            this.setVelocity(v2.add(this.velocity(), v2.scale(impulse, 1.0 / this.mass)));
             this.setAngularVelocity(this.angularVelocity() + angularImpulse / this.momentOfInertia);
         }
     }

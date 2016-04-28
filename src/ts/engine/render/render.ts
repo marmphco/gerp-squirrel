@@ -1,4 +1,4 @@
-module GerpSquirrel.Render {
+module gerpsquirrel.render {
 
     export interface Renderable<T> {
         renderInfo: (timeIntoFrame: number) => T;

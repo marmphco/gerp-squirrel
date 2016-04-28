@@ -1,4 +1,4 @@
-module GerpSquirrel.Event {
+module gerpsquirrel.event {
 
     export interface Receiver<T> {
         (item: T): void;

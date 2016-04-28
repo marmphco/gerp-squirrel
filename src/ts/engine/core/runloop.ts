@@ -1,4 +1,5 @@
-module GerpSquirrel {
+module gerpsquirrel {
+    
     export interface RenderFunction {
         (timestep: number): void;
     }

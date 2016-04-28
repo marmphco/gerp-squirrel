@@ -2,11 +2,12 @@
 /// <reference path="../math/region.ts" />
 /// <reference path="../dynamics/dynamics.ts" />
 
-module GerpSquirrel.Constraint {
+module gerpsquirrel.constraint {
 
-	import v2 = GerpSquirrel.Vector2;
-    import Vector2 = GerpSquirrel.Vector2.Vector2;
-    import Region = GerpSquirrel.Region.Region;
+	import v2 = gerpsquirrel.vector2;
+
+    import Region = gerpsquirrel.region.Region;
+    import Vector2 = v2.Vector2;
 
     export function constrainToRegion(actor: Dynamics.Actor, r: Region) {
         if (!r.containsVector(actor.center())) {
