@@ -7,7 +7,7 @@
 /// <reference path="../engine/dynamics/dynamics.ts" />
 /// <reference path="../engine/dynamics/collision.ts" />
 
-module Client {
+module client {
 
     import gs = gerpsquirrel;
     import v2 = gerpsquirrel.vector2;
