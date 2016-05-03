@@ -127,22 +127,16 @@ module client {
                 collision.resolveCollision(thing.hull.actor, other.hull.actor, collisionInfo);
             }
 
-            /*walls.forEach((wall) => {
+            walls.forEach((wall) => {
                 var collisionData = collision.hullIntersection(wall.hull, thing.hull);
                 if (collisionData) {
                     collision.resolveCollision(wall.hull.actor, thing.hull.actor, collisionData);
-
-                    //const axis = v2.subtract(collisionData.positions[1], collisionData.positions[0]);
-                    //thing.hull.actor._center = v2.add(thing.hull.actor.center(), v2.scale(axis, 1));
                 }
                 collisionData = collision.hullIntersection(wall.hull, other.hull);
                 if (collisionData) {
                     collision.resolveCollision(wall.hull.actor, other.hull.actor, collisionData);
-
-                    //const axis = v2.subtract(collisionData.positions[1], collisionData.positions[0]);
-                    //other.hull.actor._center = v2.add(other.hull.actor.center(), v2.scale(axis, 1));
                 }
-            })*/
+            })
 
         }, gs.forever);
 
