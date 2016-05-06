@@ -124,6 +124,39 @@ module gerpsquirrel.collision {
         console.log("energyDelta", actor1.energy() + actor2.energy() - energyBefore);
     }
 
+    // resolveCollision with fixedActor.mass => infinity
+    export function resolveCollisionFixed(fixedActor: Actor, actor: Actor, info: CollisionInfo) {
+        const energyBefore = fixedActor.energy() + actor.energy();
+
+        const axis = info.axis();
+        const normal = info.normal();
+
+        // TODO these positions may be inaccurate after projection phase...
+        const localVelocity1 = info.toLocalSpace(fixedActor.velocityAt(info.positions[0]));
+        const localVelocity2 = info.toLocalSpace(actor.velocityAt(info.positions[1]));
+
+        const relativeVelocity = v2.subtract(localVelocity1, localVelocity2);
+
+        const r1 = v2.subtract(info.positions[0], fixedActor.center());
+        const r2 = v2.subtract(info.positions[1], actor.center());
+
+        const massFunction = (1 / actor.mass)
+            + (1 / actor.momentOfInertia * v2.lengthSquared(r2))
+            - (1 / actor.momentOfInertia * v2.dot(r2, normal) * v2.projectedLength(r2, normal));
+
+        const restitution = 1;
+        const impulseMagnitude2 = (restitution + 1) * (localVelocity1[1] - localVelocity2[1]) / massFunction;
+        const impulse2 = v2.scale(normal, impulseMagnitude2);
+
+        // project out of collision
+        actor.setCenter(v2.add(actor.center(), v2.scale(axis, -1.0)));
+
+        // apply impulses
+        actor.applyImpulse(info.positions[1], impulse2);
+
+        console.log("energyDelta", fixedActor.energy() + actor.energy() - energyBefore);
+    }
+
     export function inaccurateResolve(actor1: Actor, actor2: Actor, info: CollisionInfo) {
         const axis = info.axis();
         actor1._center = v2.add(actor1.center(), v2.scale(axis, 0.5));
@@ -150,7 +183,7 @@ module gerpsquirrel.collision {
                 const otherProjectionInfo = dynamics.hullProjected(otherHull, edgeNormal);
                 const otherProjected = otherProjectionInfo[0];
 
-                if (projected[0] > otherProjected[1] || projected[1] < otherProjected[0]) {
+                if (projected[0] >= otherProjected[1] || projected[1] <= otherProjected[0]) {
                     return null;
                 }
 
