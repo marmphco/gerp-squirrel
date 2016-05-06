@@ -75,6 +75,49 @@ module gerpsquirrel.dynamics {
         return v2.scale(total, 1 / (vertices.length - 2));
     }
 
+    export function triangleMomentOfInertia(a: Vector2, b: Vector2, c: Vector2, axis: Vector2): number {
+        const centroid = triangleCentroid(a, b, c);
+        const base = v2.length(v2.subtract(b, c));
+
+        const aOnBC = v2.add(b, v2.project(v2.subtract(a, b), v2.subtract(c, b)));
+        const height = v2.length(v2.subtract(a, aOnBC));
+        const semibase = v2.length(v2.subtract(aOnBC, b));
+
+        // parallel axis theorem factor
+        const parallelAxisFactor = v2.lengthSquared(v2.subtract(axis, centroid));
+
+        return (base * base
+                - base * semibase
+                + semibase * semibase
+                + height * height) / 18 + parallelAxisFactor;
+    }
+
+    export function triangleArea(a: Vector2, b: Vector2, c: Vector2): number {
+        const centroid = triangleCentroid(a, b, c);
+        const base = v2.length(v2.subtract(b, c));
+
+        const aOnBC = v2.add(b, v2.project(v2.subtract(a, b), v2.subtract(c, b)));
+        const height = v2.length(v2.subtract(a, aOnBC));
+
+        return base * height / 2;
+    }
+
+    // assumes that the center of mass is [0, 0]
+    export function convexMomentOfInertia(hull: ConvexHull): number {
+        var totalMoment: number = 0;
+        var totalArea: number = 0;
+        
+        for (var i = 0; i < hull.vertices.length; ++i) {
+            const vertex1 = hull.vertices[i];
+            const vertex2 = hull.vertices[(i + 1) % hull.vertices.length];
+            const triangleMoment = triangleMomentOfInertia(v2.ZERO, vertex1, vertex2, v2.ZERO);
+            const area = triangleArea(v2.ZERO, vertex1, vertex2);
+            totalMoment += triangleMoment * area;
+            totalArea += area;
+        }
+        return (totalMoment * hull.actor.mass) / totalArea;
+    }
+
     export function hullProjected(hull: ConvexHull, axis: Vector2): [Vector2, Vector2, Vector2] {
         var projectedSpan: Vector2 = [Number.MAX_VALUE, Number.MIN_VALUE];
         var minVertex: Vector2 = [0, 0];

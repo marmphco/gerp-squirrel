@@ -32,7 +32,7 @@ module client {
                 [0, 0], [size, 0], [size, size], [0, size]
             ]);
             this.hull.actor.mass = mass;
-            this.hull.actor.momentOfInertia = this.hull.actor.mass * (size*size + size*size) / 12;
+            this.hull.actor.momentOfInertia = dynamics.convexMomentOfInertia(this.hull);
         }
 
         renderInfo(timeIntoFrame: number) {

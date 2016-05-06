@@ -59,7 +59,7 @@ module gerpsquirrel.vector2 {
 
     export type Vector2 = [number, number];
 
-    export const zero: Vector2 = [0, 0];
+    export const ZERO: Vector2 = [0, 0];
 
     export function by(builder: (i: number) => number): Vector2 {
         return [builder(0), builder(1)];
