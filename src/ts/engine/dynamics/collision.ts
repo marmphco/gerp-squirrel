@@ -21,6 +21,10 @@ module gerpsquirrel.collision {
             this.depth = depth;
         }
 
+        isTrivial(): boolean {
+            return this.depth < 0.001;
+        }
+
         axis(): Vector2 {
             return v2.subtract(this.positions[0], this.positions[1]);
         }
@@ -121,6 +125,10 @@ module gerpsquirrel.collision {
         actor1.applyImpulse(info.positions[0], impulse1);
         actor2.applyImpulse(info.positions[1], impulse2);
 
+        if (isNaN(actor1.energy() + actor2.energy() - energyBefore)) {
+            debugger;
+        }
+
         console.log("energyDelta", actor1.energy() + actor2.energy() - energyBefore);
     }
 
@@ -208,6 +216,10 @@ module gerpsquirrel.collision {
                         minimumDepthCollision = new CollisionInfo(positions, depthB);
                     }
                 }
+            }
+
+            if (minimumDepthCollision.isTrivial()) {
+                return null;
             }
 
             return minimumDepthCollision;
