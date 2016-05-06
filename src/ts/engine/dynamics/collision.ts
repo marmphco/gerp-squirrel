@@ -107,7 +107,7 @@ module gerpsquirrel.collision {
                            - (1 / actor1.momentOfInertia * v2.dot(r1, normal) * v2.projectedLength(r1, normal)) 
                            - (1 / actor2.momentOfInertia * v2.dot(r2, normal) * v2.projectedLength(r2, normal));
 
-        const restitution = 1;
+        const restitution = 0.2;
 
         const impulseMagnitude1 = (restitution + 1) * (localVelocity2[1] - localVelocity1[1]) / massFunction;
         const impulseMagnitude2 = (restitution + 1) * (localVelocity1[1] - localVelocity2[1]) / massFunction;
@@ -152,7 +152,7 @@ module gerpsquirrel.collision {
             + (1 / actor.momentOfInertia * v2.lengthSquared(r2))
             - (1 / actor.momentOfInertia * v2.dot(r2, normal) * v2.projectedLength(r2, normal));
 
-        const restitution = 1;
+        const restitution = 0.2;
         const impulseMagnitude2 = (restitution + 1) * (localVelocity1[1] - localVelocity2[1]) / massFunction;
         const impulse2 = v2.scale(normal, impulseMagnitude2);
 
