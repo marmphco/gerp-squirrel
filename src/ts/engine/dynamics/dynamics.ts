@@ -1,11 +1,13 @@
 /// <reference path="../math/vector.ts" />
+/// <reference path="../math/box.ts" />
 /// <reference path="../dynamics/actor.ts" />
 
 module gerpsquirrel.dynamics {
 
-    import v2 = gerpsquirrel.vector2;
+    import v2 = vector2;
     
-    import Vector2 = gerpsquirrel.vector2.Vector2;
+    import Vector2 = vector2.Vector2;
+    import Box = box.Box;
 
     export interface ConvexHull {
         actor: Actor;
@@ -33,6 +35,22 @@ module gerpsquirrel.dynamics {
     export function hullVertices(hull: ConvexHull): Array<Vector2> {
         // TODO cache this
         return hull.vertices.map((vertex) => hull.actor.fromLocalSpace(vertex));
+    }
+
+    export function hullBounds(hull: ConvexHull): Box {
+        var minX = Number.MAX_VALUE;
+        var maxX = Number.MIN_VALUE;
+        var minY = Number.MAX_VALUE;
+        var maxY = Number.MIN_VALUE;
+
+        hull.vertices.forEach((vertex) => {
+            var worldSpaceVertex = hull.actor.fromLocalSpace(vertex);
+            minX = Math.min(minX, worldSpaceVertex[0]);
+            maxX = Math.max(maxX, worldSpaceVertex[0]);
+            minY = Math.min(minY, worldSpaceVertex[1]);
+            maxY = Math.max(maxY, worldSpaceVertex[1]);
+        });
+        return new Box([(maxX + minX) / 2, (maxY + minY) / 2], [(maxX - minX) / 2, (maxY - minY) / 2]);
     }
 
     // TODO maybe this general hull stuff should be abstracted away from the dynamics stuff.

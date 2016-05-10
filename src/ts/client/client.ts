@@ -1,11 +1,13 @@
 /// <reference path="../engine/core/runloop.ts" />
 /// <reference path="../engine/core/event.ts" />
 /// <reference path="../engine/math/vector.ts" />
+/// <reference path="../engine/math/box.ts" />
 /// <reference path="../engine/render/render.ts" />
 /// <reference path="../engine/input/mouse.ts" />
 /// <reference path="../engine/math/region.ts" />
 /// <reference path="../engine/dynamics/dynamics.ts" />
 /// <reference path="../engine/dynamics/collision.ts" />
+/// <reference path="../engine/dynamics/quadtree.ts" />
 
 module client {
 
@@ -18,6 +20,8 @@ module client {
     import collision = gerpsquirrel.collision;
 
     import Vector2 = v2.Vector2;
+    import Box = gerpsquirrel.box.Box;
+    import QuadTree = gerpsquirrel.quadtree.QuadTree;
 
     interface ThingRenderInfo {
         vertices: Array<Vector2>;
@@ -44,9 +48,16 @@ module client {
     }
 
     function makeRandomThing(bounds: Vector2): Thing {
-        const thing: Thing = new Thing(Math.random() * 160 + 40, Math.random() * 160 + 40);
+        const thing: Thing = new Thing(Math.random() * 80 + 20, Math.random() * 80 + 20);
         thing.hull.actor.setCenter([Math.random()*bounds[0], Math.random()*bounds[1]]);
         return thing;
+    }
+
+    function jankProfile(label: string, stuff: () => void) {
+        const start = Date.now();
+        stuff();
+        const end = Date.now();
+        console.log(label, "" + (end - start) + "ms")
     }
 
     export function init(element: HTMLCanvasElement) {
@@ -59,6 +70,7 @@ module client {
         }, gs.forever);
 
         const thingRenderer = render.Canvas2DRendererMake(context, (context, info: ThingRenderInfo) => {
+            context.strokeStyle = "#000000";
             context.beginPath();
             context.moveTo(info.vertices[0][0], info.vertices[0][1]);
             for (var i = 1; i < info.vertices.length; i++) {
@@ -72,19 +84,10 @@ module client {
         });
         renderLoop.scheduleRenderFunction(thingRenderer.run, gs.forever);
 
-        const things: Array<Thing> = [
-            //thing, other
-            makeRandomThing([element.width, element.height]),
-            makeRandomThing([element.width, element.height]),
-            makeRandomThing([element.width, element.height]),
-            makeRandomThing([element.width, element.height]),
-            makeRandomThing([element.width, element.height]),
-            makeRandomThing([element.width, element.height]),
-            makeRandomThing([element.width, element.height]),
-            makeRandomThing([element.width, element.height]),
-            makeRandomThing([element.width, element.height]),
-            makeRandomThing([element.width, element.height])
-        ];
+        var things: Array<Thing> = [];
+        for (var i = 0; i < 50; ++i) {
+            things.push(makeRandomThing([element.width, element.height]));
+        }
 
         things.forEach((thing) => {
             thingRenderer.addItem(thing);
@@ -129,10 +132,14 @@ module client {
         });
 
         var collisionInfo: collision.CollisionInfo = null;
+        var thingBounds: Array<Box> = null;
+        var thingCollisionTree: QuadTree<Thing> = null;
+        var totalThingCenter: Vector2;
+        var totalThingHalfSize: Vector2;
         renderLoop.scheduleUpdateFunction((timestep) => {
 
             things.forEach((thing) => {
-                thing.hull.actor.applyForce(thing.hull.actor.center(), [0, 200]);
+                //thing.hull.actor.applyForce(thing.hull.actor.center(), [0, 200]);
                 thing.hull.actor.advance(timestep);
             });
 
@@ -142,35 +149,89 @@ module client {
                 const force = v2.subtract(v2.scale(v2.subtract(endOfDrag, worldSpaceStartOfDrag), 80.0), v2.scale(velocityAtPoint, 200.0));
                 draggedThing.hull.actor.applyForce(worldSpaceStartOfDrag, force);
             }
-            things.forEach((thing) => {
-                walls.forEach((wall) => {
-                    var collisionData = collision.hullIntersection(wall.hull, thing.hull);
-                    if (collisionData) {
-                        collision.resolveCollisionFixed(wall.hull.actor, thing.hull.actor, collisionData);
-                    }
-                });
-                things.forEach((otherThing) => {
-                    if (thing == otherThing) {
-                        return;
-                    }
 
-                    collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
-                    if (collisionInfo) {
-                        collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
-                    }
+            jankProfile("collisions", () => {
+                var minX = Number.MAX_VALUE;
+                var maxX = Number.MIN_VALUE;
+                var minY = Number.MAX_VALUE;
+                var maxY = Number.MIN_VALUE;
+
+                thingBounds = things.map((thing) => dynamics.hullBounds(thing.hull));
+
+                things.forEach((thing) => {
+                    const center = thing.hull.actor.center();
+                    minX = Math.min(minX, center[0]);
+                    maxX = Math.max(maxX, center[0]);
+                    minY = Math.min(minY, center[1]);
+                    maxY = Math.max(maxY, center[1]);
                 });
-            })
+
+                totalThingCenter = [(maxX + minX) / 2, (maxY + minY) / 2];
+                totalThingHalfSize = [(maxX - minX) / 2, (maxY - minY) / 2];
+                /*const thingCenter = things
+                    .map((thing) => {
+                        const center = thing.hull.actor.center();
+                        minX = Math.min(minX, center[0]);
+                        maxX = Math.max(maxX, center[0]);
+                        minY = Math.min(minY, center[1]);
+                        maxY = Math.max(maxY, center[1]);
+                        return center;
+                    })
+                    .reduce((totalCenter, currentCenter) => {
+                        return v2.add(totalCenter, v2.scale(currentCenter, 1.0 / things.length))
+                    });*/
+                thingCollisionTree = new QuadTree<Thing>(new Box(totalThingCenter, totalThingHalfSize), 10);
+
+                things.forEach((thing, i) => {
+                    thingCollisionTree.insert({
+                        bounds: thingBounds[i],
+                        data: thing
+                    });
+                })
+
+                things.forEach((thing, i) => {
+                    walls.forEach((wall) => {
+                        var collisionData = collision.hullIntersection(wall.hull, thing.hull);
+                        if (collisionData) {
+                            collision.resolveCollisionFixed(wall.hull.actor, thing.hull.actor, collisionData);
+                        }
+                    });
+                    // things.forEach((otherThing) => {
+                    //     if (thing == otherThing) {
+                    //         return;
+                    //     }
+
+                    //     collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
+                    //     if (collisionInfo) {
+                    //         collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
+                    //     }
+                    // });
+                    thingCollisionTree.itemsInBox(thingBounds[i]).forEach((item) => {
+                        const otherThing = item.data;
+                        if (thing == otherThing) {
+                            return;
+                        }
+
+                        collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
+                        if (collisionInfo) {
+                            collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
+                        }
+                    })
+                })
+            });
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction((_) => {
             if (dragging) {
                 const startOfDrag = draggedThing.hull.actor.fromLocalSpace(startDragOffset);
+                context.strokeStyle = "#000000";
                 context.beginPath();
                 context.moveTo(startOfDrag[0], startOfDrag[1]);
                 context.lineTo(endOfDrag[0], endOfDrag[1]);
                 context.stroke();
             }
             if (collisionInfo) {
+                context.strokeStyle = "#000000";
                 context.fillStyle = "#ff0000";
                 context.fillRect(collisionInfo.positions[0][0], collisionInfo.positions[0][1], 4, 4);
                 context.fillStyle = "#00ff00";
@@ -179,6 +240,35 @@ module client {
                 context.moveTo(collisionInfo.positions[0][0], collisionInfo.positions[0][1]);
                 context.lineTo(collisionInfo.positions[1][0], collisionInfo.positions[1][1]);
                 context.stroke();
+            }
+            if (thingBounds && thingCollisionTree) {
+                thingCollisionTree
+//                    .itemsInBox(new Box([element.width / 4, element.height / 4], [element.width / 4, element.height / 4]))
+                    .itemsInBox(dynamics.hullBounds(things[0].hull))
+                    .forEach((item) => {
+                        const bounds = dynamics.hullBounds(item.data.hull);
+                        context.fillStyle = "rgba(0, 255, 0, 0.2)";
+                        context.fillRect(bounds.center[0] - bounds.halfSize[0],
+                                         bounds.center[1] - bounds.halfSize[1],
+                                         bounds.halfSize[0] * 2,
+                                         bounds.halfSize[1] * 2);
+                });
+
+                const thing0bounds = dynamics.hullBounds(things[0].hull);
+                context.fillStyle = "rgba(0, 0, 255, 0.2)";
+                context.fillRect(thing0bounds.center[0] - thing0bounds.halfSize[0],
+                    thing0bounds.center[1] - thing0bounds.halfSize[1],
+                    thing0bounds.halfSize[0] * 2,
+                    thing0bounds.halfSize[1] * 2);
+            }
+            if (thingCollisionTree) {
+                thingCollisionTree.allBounds().forEach((bounds) => {
+                    context.strokeStyle = "rgba(255, 0, 0, 0.2)";
+                    context.strokeRect(bounds.center[0] - bounds.halfSize[0],
+                        bounds.center[1] - bounds.halfSize[1],
+                        bounds.halfSize[0] * 2,
+                        bounds.halfSize[1] * 2);
+                });
             }
         }, gs.forever);
 

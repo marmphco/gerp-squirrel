@@ -107,7 +107,7 @@ module gerpsquirrel.collision {
                            - (1 / actor1.momentOfInertia * v2.dot(r1, normal) * v2.projectedLength(r1, normal)) 
                            - (1 / actor2.momentOfInertia * v2.dot(r2, normal) * v2.projectedLength(r2, normal));
 
-        const restitution = 0.2;
+        const restitution = 1.0;
 
         const impulseMagnitude1 = (restitution + 1) * (localVelocity2[1] - localVelocity1[1]) / massFunction;
         const impulseMagnitude2 = (restitution + 1) * (localVelocity1[1] - localVelocity2[1]) / massFunction;
@@ -129,7 +129,7 @@ module gerpsquirrel.collision {
             debugger;
         }
 
-        console.log("energyDelta", actor1.energy() + actor2.energy() - energyBefore);
+        //console.log("energyDelta", actor1.energy() + actor2.energy() - energyBefore);
     }
 
     // resolveCollision with fixedActor.mass => infinity
@@ -152,7 +152,7 @@ module gerpsquirrel.collision {
             + (1 / actor.momentOfInertia * v2.lengthSquared(r2))
             - (1 / actor.momentOfInertia * v2.dot(r2, normal) * v2.projectedLength(r2, normal));
 
-        const restitution = 0.2;
+        const restitution = 1.0;
         const impulseMagnitude2 = (restitution + 1) * (localVelocity1[1] - localVelocity2[1]) / massFunction;
         const impulse2 = v2.scale(normal, impulseMagnitude2);
 
@@ -162,7 +162,7 @@ module gerpsquirrel.collision {
         // apply impulses
         actor.applyImpulse(info.positions[1], impulse2);
 
-        console.log("energyDelta", fixedActor.energy() + actor.energy() - energyBefore);
+        //console.log("energyDelta", fixedActor.energy() + actor.energy() - energyBefore);
     }
 
     export function inaccurateResolve(actor1: Actor, actor2: Actor, info: CollisionInfo) {
