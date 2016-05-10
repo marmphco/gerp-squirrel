@@ -8,6 +8,7 @@
 /// <reference path="../engine/dynamics/dynamics.ts" />
 /// <reference path="../engine/dynamics/collision.ts" />
 /// <reference path="../engine/dynamics/quadtree.ts" />
+/// <reference path="../engine/utility/profile.ts" />
 
 module client {
 
@@ -22,6 +23,7 @@ module client {
     import Vector2 = v2.Vector2;
     import Box = gerpsquirrel.box.Box;
     import QuadTree = gerpsquirrel.quadtree.QuadTree;
+    import sharedProfiler = gerpsquirrel.profile.sharedProfiler;
 
     interface ThingRenderInfo {
         vertices: Array<Vector2>;
@@ -48,16 +50,9 @@ module client {
     }
 
     function makeRandomThing(bounds: Vector2): Thing {
-        const thing: Thing = new Thing(Math.random() * 80 + 20, Math.random() * 80 + 20);
+        const thing: Thing = new Thing(Math.random() * 16 + 4, Math.random() * 16 + 4);
         thing.hull.actor.setCenter([Math.random()*bounds[0], Math.random()*bounds[1]]);
         return thing;
-    }
-
-    function jankProfile(label: string, stuff: () => void) {
-        const start = Date.now();
-        stuff();
-        const end = Date.now();
-        console.log(label, "" + (end - start) + "ms")
     }
 
     export function init(element: HTMLCanvasElement) {
@@ -68,6 +63,23 @@ module client {
         renderLoop.scheduleRenderFunction((_) => {
             context.clearRect(0, 0, element.width, element.height);
         }, gs.forever);
+
+        function renderProfileResults(results: gerpsquirrel.profile.Profile, x: number, y: number) {
+            context.font = "10px sans-serif";
+            context.fillStyle = "#000000";
+            for (var key in results) {
+                const entry = results[key];
+
+                if (typeof entry == "number") {
+                    context.fillText(key + ": " + entry, x, y);
+                    y += 11;
+                }
+                else {
+                    y = renderProfileResults(entry, x, y + 11);
+                }
+            }
+            return y;
+        }
 
         const thingRenderer = render.Canvas2DRendererMake(context, (context, info: ThingRenderInfo) => {
             context.strokeStyle = "#000000";
@@ -85,7 +97,7 @@ module client {
         renderLoop.scheduleRenderFunction(thingRenderer.run, gs.forever);
 
         var things: Array<Thing> = [];
-        for (var i = 0; i < 50; ++i) {
+        for (var i = 0; i < 400; ++i) {
             things.push(makeRandomThing([element.width, element.height]));
         }
 
@@ -123,7 +135,6 @@ module client {
         });
         mouseInput.upSource().addReceiver((mouseInfo) => {
             dragging = false;
-            draggedThing = null;
         });
         mouseInput.moveSource().addReceiver((mouseInfo) => {
             if (dragging) {
@@ -138,10 +149,15 @@ module client {
         var totalThingHalfSize: Vector2;
         renderLoop.scheduleUpdateFunction((timestep) => {
 
+            sharedProfiler().begin("simulation.integration");
+
             things.forEach((thing) => {
                 //thing.hull.actor.applyForce(thing.hull.actor.center(), [0, 200]);
                 thing.hull.actor.advance(timestep);
             });
+
+            sharedProfiler().end("simulation.integration");
+            sharedProfiler().begin("simulation.dragging");
 
             if (dragging) {
                 const worldSpaceStartOfDrag = draggedThing.hull.actor.fromLocalSpace(startDragOffset);
@@ -150,75 +166,102 @@ module client {
                 draggedThing.hull.actor.applyForce(worldSpaceStartOfDrag, force);
             }
 
-            jankProfile("collisions", () => {
-                var minX = Number.MAX_VALUE;
-                var maxX = Number.MIN_VALUE;
-                var minY = Number.MAX_VALUE;
-                var maxY = Number.MIN_VALUE;
+            sharedProfiler().end("simulation.dragging");
 
-                thingBounds = things.map((thing) => dynamics.hullBounds(thing.hull));
+            sharedProfiler().begin("collision.total");
+            sharedProfiler().begin("collision.boundsCalculation");
 
-                things.forEach((thing) => {
+            var minX = Number.MAX_VALUE;
+            var maxX = Number.MIN_VALUE;
+            var minY = Number.MAX_VALUE;
+            var maxY = Number.MIN_VALUE;
+
+            thingBounds = things.map((thing) => dynamics.hullBounds(thing.hull));
+
+            things.forEach((thing) => {
+                const center = thing.hull.actor.center();
+                minX = Math.min(minX, center[0]);
+                maxX = Math.max(maxX, center[0]);
+                minY = Math.min(minY, center[1]);
+                maxY = Math.max(maxY, center[1]);
+            });
+
+            totalThingCenter = [(maxX + minX) / 2, (maxY + minY) / 2];
+            totalThingHalfSize = [(maxX - minX) / 2, (maxY - minY) / 2];
+
+            sharedProfiler().end("collision.boundsCalculation");
+            /*const thingCenter = things
+                .map((thing) => {
                     const center = thing.hull.actor.center();
                     minX = Math.min(minX, center[0]);
                     maxX = Math.max(maxX, center[0]);
                     minY = Math.min(minY, center[1]);
                     maxY = Math.max(maxY, center[1]);
+                    return center;
+                })
+                .reduce((totalCenter, currentCenter) => {
+                    return v2.add(totalCenter, v2.scale(currentCenter, 1.0 / things.length))
+                });*/
+
+            sharedProfiler().begin("collision.treeGeneration");
+            thingCollisionTree = new QuadTree<Thing>(new Box(totalThingCenter, totalThingHalfSize), 5);
+
+            things.forEach((thing, i) => {
+                thingCollisionTree.insert({
+                    bounds: thingBounds[i],
+                    data: thing
                 });
+            })
 
-                totalThingCenter = [(maxX + minX) / 2, (maxY + minY) / 2];
-                totalThingHalfSize = [(maxX - minX) / 2, (maxY - minY) / 2];
-                /*const thingCenter = things
-                    .map((thing) => {
-                        const center = thing.hull.actor.center();
-                        minX = Math.min(minX, center[0]);
-                        maxX = Math.max(maxX, center[0]);
-                        minY = Math.min(minY, center[1]);
-                        maxY = Math.max(maxY, center[1]);
-                        return center;
-                    })
-                    .reduce((totalCenter, currentCenter) => {
-                        return v2.add(totalCenter, v2.scale(currentCenter, 1.0 / things.length))
-                    });*/
-                thingCollisionTree = new QuadTree<Thing>(new Box(totalThingCenter, totalThingHalfSize), 10);
+            sharedProfiler().end("collision.treeGeneration");
 
-                things.forEach((thing, i) => {
-                    thingCollisionTree.insert({
-                        bounds: thingBounds[i],
-                        data: thing
-                    });
-                })
+            things.forEach((thing, i) => {
+                sharedProfiler().begin("collision.walls");
+                walls.forEach((wall) => {
+                    if (!thingBounds[i].intersects(dynamics.hullBounds(wall.hull))) {
+                        return;
+                    }
 
-                things.forEach((thing, i) => {
-                    walls.forEach((wall) => {
-                        var collisionData = collision.hullIntersection(wall.hull, thing.hull);
-                        if (collisionData) {
-                            collision.resolveCollisionFixed(wall.hull.actor, thing.hull.actor, collisionData);
-                        }
-                    });
-                    // things.forEach((otherThing) => {
-                    //     if (thing == otherThing) {
-                    //         return;
-                    //     }
+                    var collisionData = collision.hullIntersection(wall.hull, thing.hull);
+                    if (collisionData) {
+                        collision.resolveCollisionFixed(wall.hull.actor, thing.hull.actor, collisionData);
+                    }
+                });
+                sharedProfiler().end("collision.walls");
 
-                    //     collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
-                    //     if (collisionInfo) {
-                    //         collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
-                    //     }
-                    // });
-                    thingCollisionTree.itemsInBox(thingBounds[i]).forEach((item) => {
-                        const otherThing = item.data;
-                        if (thing == otherThing) {
-                            return;
-                        }
+                // things.forEach((otherThing) => {
+                //     if (thing == otherThing) {
+                //         return;
+                //     }
 
-                        collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
-                        if (collisionInfo) {
-                            collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
-                        }
-                    })
-                })
+                //     collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
+                //     if (collisionInfo) {
+                //         collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
+                //     }
+                // });
+                sharedProfiler().begin("collision.things");
+                thingCollisionTree.itemsInBox(thingBounds[i]).forEach((item) => {
+                    const otherThing = item.data;
+                    if (thing == otherThing) {
+                        return;
+                    }
+                    if (!thingBounds[i].intersects(dynamics.hullBounds(otherThing.hull))) {
+                        return;
+                    }
+
+                    collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
+                    if (collisionInfo) {
+                        collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
+                    }
+                });
+                sharedProfiler().end("collision.things");
             });
+            sharedProfiler().end("collision.total");
+
+            const results = sharedProfiler().results();
+            renderProfileResults(results, 0, 0);
+            sharedProfiler().clear();
+
         }, gs.forever);
 
         renderLoop.scheduleRenderFunction((_) => {
@@ -241,10 +284,10 @@ module client {
                 context.lineTo(collisionInfo.positions[1][0], collisionInfo.positions[1][1]);
                 context.stroke();
             }
-            if (thingBounds && thingCollisionTree) {
+            if (thingBounds && thingCollisionTree && draggedThing) {
                 thingCollisionTree
 //                    .itemsInBox(new Box([element.width / 4, element.height / 4], [element.width / 4, element.height / 4]))
-                    .itemsInBox(dynamics.hullBounds(things[0].hull))
+                    .itemsInBox(dynamics.hullBounds(draggedThing.hull))
                     .forEach((item) => {
                         const bounds = dynamics.hullBounds(item.data.hull);
                         context.fillStyle = "rgba(0, 255, 0, 0.2)";
@@ -254,12 +297,12 @@ module client {
                                          bounds.halfSize[1] * 2);
                 });
 
-                const thing0bounds = dynamics.hullBounds(things[0].hull);
+                const draggedThingBounds = dynamics.hullBounds(draggedThing.hull);
                 context.fillStyle = "rgba(0, 0, 255, 0.2)";
-                context.fillRect(thing0bounds.center[0] - thing0bounds.halfSize[0],
-                    thing0bounds.center[1] - thing0bounds.halfSize[1],
-                    thing0bounds.halfSize[0] * 2,
-                    thing0bounds.halfSize[1] * 2);
+                context.fillRect(draggedThingBounds.center[0] - draggedThingBounds.halfSize[0],
+                    draggedThingBounds.center[1] - draggedThingBounds.halfSize[1],
+                    draggedThingBounds.halfSize[0] * 2,
+                    draggedThingBounds.halfSize[1] * 2);
             }
             if (thingCollisionTree) {
                 thingCollisionTree.allBounds().forEach((bounds) => {
