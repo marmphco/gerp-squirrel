@@ -6,17 +6,12 @@ module gerpsquirrel.dynamics {
 
     import v2 = vector2;
     
-    import Vector2 = vector2.Vector2;
     import Box = box.Box;
+    import Vector2 = vector2.Vector2;
 
-    export interface ConvexHull {
+    export class ConvexHull {
         actor: Actor;
-        vertices: Array<Vector2>;
-    }
-
-    class _ConvexHull implements ConvexHull {
-        actor: Actor;
-        vertices: Array<Vector2>;
+        private _vertices: Array<Vector2>;
 
         constructor(vertices: Array<Vector2>) {
             this.actor = new Actor(1, 1);
@@ -24,17 +19,16 @@ module gerpsquirrel.dynamics {
             // compute center of mass (just the centroid)
             const centerOfMass = convexCentroid(vertices);
 
-            this.vertices = vertices.map((vertex) => v2.subtract(vertex, centerOfMass));
+            this._vertices = vertices.map((vertex) => v2.subtract(vertex, centerOfMass));
         }
-    }
 
-    export function ConvexHullMake(vertices: Array<Vector2>): ConvexHull {
-        return new _ConvexHull(vertices);
-    }
+        localVertices() {
+            return this._vertices;
+        }
 
-    export function hullVertices(hull: ConvexHull): Array<Vector2> {
-        // TODO cache this
-        return hull.vertices.map((vertex) => hull.actor.fromLocalSpace(vertex));
+        worldVertices() {
+            return this._vertices.map((vertex) => this.actor.fromLocalSpace(vertex));
+        }
     }
 
     export function hullBounds(hull: ConvexHull): Box {
@@ -43,12 +37,11 @@ module gerpsquirrel.dynamics {
         var minY = Number.MAX_VALUE;
         var maxY = Number.MIN_VALUE;
 
-        hull.vertices.forEach((vertex) => {
-            var worldSpaceVertex = hull.actor.fromLocalSpace(vertex);
-            minX = Math.min(minX, worldSpaceVertex[0]);
-            maxX = Math.max(maxX, worldSpaceVertex[0]);
-            minY = Math.min(minY, worldSpaceVertex[1]);
-            maxY = Math.max(maxY, worldSpaceVertex[1]);
+        hull.worldVertices().forEach((vertex) => {
+            minX = Math.min(minX, vertex[0]);
+            maxX = Math.max(maxX, vertex[0]);
+            minY = Math.min(minY, vertex[1]);
+            maxY = Math.max(maxY, vertex[1]);
         });
         return new Box([(maxX + minX) / 2, (maxY + minY) / 2], [(maxX - minX) / 2, (maxY - minY) / 2]);
     }
@@ -124,10 +117,12 @@ module gerpsquirrel.dynamics {
     export function convexMomentOfInertia(hull: ConvexHull): number {
         var totalMoment: number = 0;
         var totalArea: number = 0;
+
+        const vertices = hull.localVertices();
         
-        for (var i = 0; i < hull.vertices.length; ++i) {
-            const vertex1 = hull.vertices[i];
-            const vertex2 = hull.vertices[(i + 1) % hull.vertices.length];
+        for (var i = 0; i < vertices.length; ++i) {
+            const vertex1 = vertices[i];
+            const vertex2 = vertices[(i + 1) % vertices.length];
             const triangleMoment = triangleMomentOfInertia(v2.ZERO, vertex1, vertex2, v2.ZERO);
             const area = triangleArea(v2.ZERO, vertex1, vertex2);
             totalMoment += triangleMoment * area;
@@ -141,9 +136,7 @@ module gerpsquirrel.dynamics {
         var minVertex: Vector2 = [0, 0];
         var maxVertex: Vector2 = [0, 0];
 
-        const vertices = hullVertices(hull);
-
-        vertices.forEach((vertex) => {
+        hull.worldVertices().forEach((vertex) => {
             const projectedVertex = v2.projectedLength(vertex, axis);
 
             if (projectedVertex < projectedSpan[0]) {
@@ -162,13 +155,14 @@ module gerpsquirrel.dynamics {
     export function hullContains(hull: ConvexHull, u: Vector2): boolean {
         // convert point to hull space
         const convertedPoint = hull.actor.toLocalSpace(u);
+        const vertices = hull.localVertices();
 
         var hasClockwise = false;
         var hasCounterClockwise = false;
 
-        for (var i = 0; i < hull.vertices.length; i++) {
-            const base = hull.vertices[i];
-            const tip = hull.vertices[(i + 1) % hull.vertices.length];
+        for (var i = 0; i < vertices.length; i++) {
+            const base = vertices[i];
+            const tip = vertices[(i + 1) % vertices.length];
             const edge = v2.subtract(tip, base);
             const baseToPoint = v2.subtract(convertedPoint, base);
             if (v2.orientation(edge, baseToPoint) == v2.Orientation.Clockwise) {

@@ -34,7 +34,7 @@ module client {
         hull: dynamics.ConvexHull;
 
         constructor(width: number, height: number, mass: number = 1) {
-            this.hull = dynamics.ConvexHullMake([
+            this.hull = new dynamics.ConvexHull([
                 [0, 0], [width, 0], [width, height], [0, height]
             ]);
             this.hull.actor.mass = mass;
@@ -43,7 +43,7 @@ module client {
 
         renderInfo(timeIntoFrame: number) {
             return {
-                vertices: dynamics.hullVertices(this.hull),
+                vertices: this.hull.worldVertices(),
                 center: this.hull.actor.center()
             }
         }

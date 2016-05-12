@@ -177,7 +177,7 @@ module gerpsquirrel.collision {
         const checkProjectionAxes = function(hull: ConvexHull, otherHull: ConvexHull): CollisionInfo {
             var minimumDepthCollision: CollisionInfo = new CollisionInfo();
 
-            const vertices = dynamics.hullVertices(hull);
+            const vertices = hull.worldVertices();
 
             for (var i = 0; i < vertices.length; i++) {
                 const baseVertex = vertices[i];
