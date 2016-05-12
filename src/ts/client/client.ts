@@ -75,7 +75,8 @@ module client {
                     y += 11;
                 }
                 else {
-                    y = renderProfileResults(entry, x, y + 11);
+                    context.fillText(key, x, y);
+                    y = renderProfileResults(entry, x + 11, y + 11);
                 }
             }
             return y;
@@ -92,7 +93,7 @@ module client {
             context.lineTo(info.vertices[0][0], info.vertices[0][1]);
             context.stroke();
 
-            context.fillRect(info.center[0], info.center[1], 4, 4);
+            context.fillRect(info.center[0] - 2, info.center[1] - 2, 4, 4);
         });
         renderLoop.scheduleRenderFunction(thingRenderer.run, gs.forever);
 
