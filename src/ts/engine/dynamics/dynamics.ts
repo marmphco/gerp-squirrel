@@ -13,10 +13,14 @@ module gerpsquirrel.dynamics {
         actor: Actor;
         private _vertices: Array<Vector2>;
 
-        // For caching
+        // For caching TODO rename these
         private _center: Vector2;
         private _orientation: number;
         private _cachedWorldVertices: Array<Vector2>;
+
+        private _boundsCenter: Vector2;
+        private _boundsOrientation: number;
+        private _cachedBounds: Box;
 
         constructor(vertices: Array<Vector2>) {
             this.actor = new Actor(1, 1);
@@ -30,6 +34,10 @@ module gerpsquirrel.dynamics {
             this._center = this.actor.center();
             this._orientation = this.actor.orientation();
             this._cachedWorldVertices = null;
+
+            this._boundsCenter = this.actor.center();
+            this._boundsOrientation = this.actor.orientation();
+            this._cachedBounds = null;
         }
 
         localVertices() {
@@ -51,18 +59,28 @@ module gerpsquirrel.dynamics {
         }
 
         worldBounds() {
-            var minX = Number.MAX_VALUE;
-            var maxX = Number.MIN_VALUE;
-            var minY = Number.MAX_VALUE;
-            var maxY = Number.MIN_VALUE;
+            if (!this._cachedBounds
+                || this._boundsCenter[0] != this.actor.center()[0]
+                || this._boundsCenter[1] != this.actor.center()[1]
+                || this._boundsOrientation != this.actor.orientation()) {
 
-            this.worldVertices().forEach((vertex) => {
-                minX = Math.min(minX, vertex[0]);
-                maxX = Math.max(maxX, vertex[0]);
-                minY = Math.min(minY, vertex[1]);
-                maxY = Math.max(maxY, vertex[1]);
-            });
-            return new Box([(maxX + minX) / 2, (maxY + minY) / 2], [(maxX - minX) / 2, (maxY - minY) / 2]);
+                this._boundsCenter = this.actor.center();
+                this._boundsOrientation = this.actor.orientation();
+
+                var minX = Number.MAX_VALUE;
+                var maxX = Number.MIN_VALUE;
+                var minY = Number.MAX_VALUE;
+                var maxY = Number.MIN_VALUE;
+
+                this.worldVertices().forEach((vertex) => {
+                    minX = Math.min(minX, vertex[0]);
+                    maxX = Math.max(maxX, vertex[0]);
+                    minY = Math.min(minY, vertex[1]);
+                    maxY = Math.max(maxY, vertex[1]);
+                });
+                this._cachedBounds = new Box([(maxX + minX) / 2, (maxY + minY) / 2], [(maxX - minX) / 2, (maxY - minY) / 2]);
+            }
+            return this._cachedBounds;
         }
 
         projectedOn(axis: Vector2): [Vector2, Vector2, Vector2] {
