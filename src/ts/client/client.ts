@@ -144,16 +144,14 @@ module client {
         });
 
         var collisionInfo: collision.CollisionInfo = null;
-        var thingBounds: Array<Box> = null;
         var thingCollisionTree: QuadTree<Thing> = null;
         var totalThingCenter: Vector2;
         var totalThingHalfSize: Vector2;
         renderLoop.scheduleUpdateFunction((timestep) => {
-
+            sharedProfiler().begin("everything");
             sharedProfiler().begin("simulation.integration");
 
             things.forEach((thing) => {
-                //thing.hull.actor.applyForce(thing.hull.actor.center(), [0, 200]);
                 thing.hull.actor.advance(timestep);
             });
 
@@ -177,8 +175,6 @@ module client {
             var minY = Number.MAX_VALUE;
             var maxY = Number.MIN_VALUE;
 
-            thingBounds = things.map((thing) => dynamics.hullBounds(thing.hull));
-
             things.forEach((thing) => {
                 const center = thing.hull.actor.center();
                 minX = Math.min(minX, center[0]);
@@ -191,35 +187,24 @@ module client {
             totalThingHalfSize = [(maxX - minX) / 2, (maxY - minY) / 2];
 
             sharedProfiler().end("collision.boundsCalculation");
-            /*const thingCenter = things
-                .map((thing) => {
-                    const center = thing.hull.actor.center();
-                    minX = Math.min(minX, center[0]);
-                    maxX = Math.max(maxX, center[0]);
-                    minY = Math.min(minY, center[1]);
-                    maxY = Math.max(maxY, center[1]);
-                    return center;
-                })
-                .reduce((totalCenter, currentCenter) => {
-                    return v2.add(totalCenter, v2.scale(currentCenter, 1.0 / things.length))
-                });*/
 
             sharedProfiler().begin("collision.treeGeneration");
             thingCollisionTree = new QuadTree<Thing>(new Box(totalThingCenter, totalThingHalfSize), 5);
 
-            things.forEach((thing, i) => {
+            things.forEach((thing) => {
                 thingCollisionTree.insert({
-                    bounds: thingBounds[i],
+                    bounds: thing.hull.worldBounds(),
                     data: thing
                 });
-            })
+            });
 
             sharedProfiler().end("collision.treeGeneration");
 
-            things.forEach((thing, i) => {
-                sharedProfiler().begin("collision.walls");
-                walls.forEach((wall) => {
-                    if (!thingBounds[i].intersects(dynamics.hullBounds(wall.hull))) {
+            sharedProfiler().begin("collision.walls");
+            walls.forEach((wall) => {
+                thingCollisionTree.itemsInBox(wall.hull.worldBounds()).forEach((item) => {
+                    const thing = item.data;
+                    if (!thing.hull.worldBounds().intersects(wall.hull.worldBounds())) {
                         return;
                     }
 
@@ -228,39 +213,35 @@ module client {
                         collision.resolveCollisionFixed(wall.hull.actor, thing.hull.actor, collisionData);
                     }
                 });
-                sharedProfiler().end("collision.walls");
-
-                // things.forEach((otherThing) => {
-                //     if (thing == otherThing) {
-                //         return;
-                //     }
-
-                //     collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
-                //     if (collisionInfo) {
-                //         collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
-                //     }
-                // });
-                sharedProfiler().begin("collision.things");
-                thingCollisionTree.itemsInBox(thingBounds[i]).forEach((item) => {
-                    const otherThing = item.data;
-                    if (thing == otherThing) {
-                        return;
-                    }
-                    if (!thingBounds[i].intersects(dynamics.hullBounds(otherThing.hull))) {
-                        return;
-                    }
-
-                    collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
-                    if (collisionInfo) {
-                        collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
-                    }
-                });
-                sharedProfiler().end("collision.things");
             });
+            sharedProfiler().end("collision.walls");
+
+            sharedProfiler().begin("collision.things");
+            thingCollisionTree.forEachPartition((partition) => {
+                for (var i = 0; i < partition.length; ++i) {
+                    const thing = partition[i].data;
+
+                    for (var j = i + 1; j < partition.length; ++j) {
+                        const otherThing = partition[j].data;
+
+                        if (!thing.hull.worldBounds().intersects(otherThing.hull.worldBounds())) {
+                            continue;
+                        }
+
+                        collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
+                        if (collisionInfo) {
+                            collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
+                        }
+                    }
+                }
+            });
+
+            sharedProfiler().end("collision.things");
             sharedProfiler().end("collision.total");
+            sharedProfiler().end("everything");
 
             const results = sharedProfiler().results();
-            renderProfileResults(results, 0, 0);
+            renderProfileResults(results, 0, 20);
             sharedProfiler().clear();
 
         }, gs.forever);
@@ -285,12 +266,11 @@ module client {
                 context.lineTo(collisionInfo.positions[1][0], collisionInfo.positions[1][1]);
                 context.stroke();
             }
-            if (thingBounds && thingCollisionTree && draggedThing) {
+            if (thingCollisionTree && draggedThing) {
                 thingCollisionTree
-//                    .itemsInBox(new Box([element.width / 4, element.height / 4], [element.width / 4, element.height / 4]))
-                    .itemsInBox(dynamics.hullBounds(draggedThing.hull))
+                    .itemsInBox(draggedThing.hull.worldBounds())
                     .forEach((item) => {
-                        const bounds = dynamics.hullBounds(item.data.hull);
+                        const bounds = item.data.hull.worldBounds();
                         context.fillStyle = "rgba(0, 255, 0, 0.2)";
                         context.fillRect(bounds.center[0] - bounds.halfSize[0],
                                          bounds.center[1] - bounds.halfSize[1],
@@ -298,7 +278,7 @@ module client {
                                          bounds.halfSize[1] * 2);
                 });
 
-                const draggedThingBounds = dynamics.hullBounds(draggedThing.hull);
+                const draggedThingBounds = draggedThing.hull.worldBounds();
                 context.fillStyle = "rgba(0, 0, 255, 0.2)";
                 context.fillRect(draggedThingBounds.center[0] - draggedThingBounds.halfSize[0],
                     draggedThingBounds.center[1] - draggedThingBounds.halfSize[1],

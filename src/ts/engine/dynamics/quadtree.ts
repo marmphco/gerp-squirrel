@@ -85,6 +85,16 @@ module gerpsquirrel.quadtree {
             return this._items.concat(topLeftItems, topRightItems, bottomRightItems, bottomLeftItems);
         }
 
+        forEachPartition(f: (item: Array<Item<Type>>) => void) {
+            if (this._items.length > 0) {
+                f(this._items);
+            }
+
+            this._children.forEach((childNode) => {
+                childNode.forEachPartition(f);
+            });
+        } 
+
         allBounds(): Array<Box> {
             const topLeftBounds = this._children.length > 0 ?
                 this._children[Position.TopLeft].allBounds() : [];

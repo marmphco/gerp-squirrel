@@ -185,10 +185,10 @@ module gerpsquirrel.collision {
                 const edge = v2.subtract(headVertex, baseVertex);
                 const edgeNormal = v2.normalize(v2.counterClockwiseOrthogonal(edge));
 
-                const projectionInfo = dynamics.hullProjected(hull, edgeNormal);
+                const projectionInfo = hull.projectedOn(edgeNormal);
                 const projected = projectionInfo[0];
 
-                const otherProjectionInfo = dynamics.hullProjected(otherHull, edgeNormal);
+                const otherProjectionInfo = otherHull.projectedOn(edgeNormal);
                 const otherProjected = otherProjectionInfo[0];
 
                 if (projected[0] >= otherProjected[1] || projected[1] <= otherProjected[0]) {

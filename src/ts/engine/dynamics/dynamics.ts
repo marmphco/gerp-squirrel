@@ -13,13 +13,23 @@ module gerpsquirrel.dynamics {
         actor: Actor;
         private _vertices: Array<Vector2>;
 
+        // For caching
+        private _center: Vector2;
+        private _orientation: number;
+        private _cachedWorldVertices: Array<Vector2>;
+
         constructor(vertices: Array<Vector2>) {
             this.actor = new Actor(1, 1);
 
-            // compute center of mass (just the centroid)
+            // compute center of mass, assuming uniform mass distribution
             const centerOfMass = convexCentroid(vertices);
 
             this._vertices = vertices.map((vertex) => v2.subtract(vertex, centerOfMass));
+
+            // Set up caching properties
+            this._center = this.actor.center();
+            this._orientation = this.actor.orientation();
+            this._cachedWorldVertices = null;
         }
 
         localVertices() {
@@ -27,23 +37,54 @@ module gerpsquirrel.dynamics {
         }
 
         worldVertices() {
-            return this._vertices.map((vertex) => this.actor.fromLocalSpace(vertex));
+            if (!this._cachedWorldVertices
+                || this._center[0] != this.actor.center()[0]
+                || this._center[1] != this.actor.center()[1]
+                || this._orientation != this.actor.orientation()) {
+
+                this._center = this.actor.center();
+                this._orientation = this.actor.orientation();
+                this._cachedWorldVertices = this._vertices.map((vertex) => this.actor.fromLocalSpace(vertex));
+            }
+               
+            return this._cachedWorldVertices;
         }
-    }
 
-    export function hullBounds(hull: ConvexHull): Box {
-        var minX = Number.MAX_VALUE;
-        var maxX = Number.MIN_VALUE;
-        var minY = Number.MAX_VALUE;
-        var maxY = Number.MIN_VALUE;
+        worldBounds() {
+            var minX = Number.MAX_VALUE;
+            var maxX = Number.MIN_VALUE;
+            var minY = Number.MAX_VALUE;
+            var maxY = Number.MIN_VALUE;
 
-        hull.worldVertices().forEach((vertex) => {
-            minX = Math.min(minX, vertex[0]);
-            maxX = Math.max(maxX, vertex[0]);
-            minY = Math.min(minY, vertex[1]);
-            maxY = Math.max(maxY, vertex[1]);
-        });
-        return new Box([(maxX + minX) / 2, (maxY + minY) / 2], [(maxX - minX) / 2, (maxY - minY) / 2]);
+            this.worldVertices().forEach((vertex) => {
+                minX = Math.min(minX, vertex[0]);
+                maxX = Math.max(maxX, vertex[0]);
+                minY = Math.min(minY, vertex[1]);
+                maxY = Math.max(maxY, vertex[1]);
+            });
+            return new Box([(maxX + minX) / 2, (maxY + minY) / 2], [(maxX - minX) / 2, (maxY - minY) / 2]);
+        }
+
+        projectedOn(axis: Vector2): [Vector2, Vector2, Vector2] {
+            var projectedSpan: Vector2 = [Number.MAX_VALUE, Number.MIN_VALUE];
+            var minVertex: Vector2 = [0, 0];
+            var maxVertex: Vector2 = [0, 0];
+
+            this.worldVertices().forEach((vertex) => {
+                const projectedVertex = v2.projectedLength(vertex, axis);
+
+                if (projectedVertex < projectedSpan[0]) {
+                    projectedSpan[0] = projectedVertex;
+                    minVertex = vertex;
+                }
+                if (projectedVertex > projectedSpan[1]) {
+                    projectedSpan[1] = projectedVertex;
+                    maxVertex = vertex;
+                }
+            });
+
+            return [projectedSpan, minVertex, maxVertex];
+        }
     }
 
     // TODO maybe this general hull stuff should be abstracted away from the dynamics stuff.
@@ -129,27 +170,6 @@ module gerpsquirrel.dynamics {
             totalArea += area;
         }
         return (totalMoment * hull.actor.mass) / totalArea;
-    }
-
-    export function hullProjected(hull: ConvexHull, axis: Vector2): [Vector2, Vector2, Vector2] {
-        var projectedSpan: Vector2 = [Number.MAX_VALUE, Number.MIN_VALUE];
-        var minVertex: Vector2 = [0, 0];
-        var maxVertex: Vector2 = [0, 0];
-
-        hull.worldVertices().forEach((vertex) => {
-            const projectedVertex = v2.projectedLength(vertex, axis);
-
-            if (projectedVertex < projectedSpan[0]) {
-                projectedSpan[0] = projectedVertex;
-                minVertex = vertex;
-            }
-            if (projectedVertex > projectedSpan[1]) {
-                projectedSpan[1] = projectedVertex;
-                maxVertex = vertex;
-            }
-        });
-
-        return [projectedSpan, minVertex, maxVertex];
     }
 
     export function hullContains(hull: ConvexHull, u: Vector2): boolean {

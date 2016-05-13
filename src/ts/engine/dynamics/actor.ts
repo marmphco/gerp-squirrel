@@ -114,7 +114,8 @@ module gerpsquirrel.dynamics {
 
         advance(timestep: number) {
             const nextPreviousCenter = this._center;
-            this._center = v2.add(v2.subtract(v2.scale(this._center, 2), this._previousCenter), v2.scale(this._acceleration, timestep * timestep));
+            //this._center = v2.add(v2.subtract(v2.scale(this._center, 2), this._previousCenter), v2.scale(this._acceleration, timestep * timestep));
+            this._center = v2.by((i) => 2 * this._center[i] - this._previousCenter[i] + this._acceleration[i] * timestep * timestep);
             this._previousCenter = nextPreviousCenter;
             this._acceleration = [0, 0];
 
