@@ -20,12 +20,21 @@ module gerpsquirrel.quadtree {
         data: Type;
     }
 
+    /*
+        Only leaf nodes can contain items.
+        So each tree can either have children, or items.
+
+        _items.length > 0 => _children.length = 0
+        _children.length > 0 => _items.length = 0
+        _children.length > 0 => _children.length = 4
+    */
     export class QuadTree<Type> {
 
         private _bounds: Box;
         private _children: Array<QuadTree<Type>>;
         private _items: Array<Item<Type>>;
 
+        // TODO needs depth limit to save the stack
         private _capacity: number;
 
         constructor(bounds: Box, capacity: number) {
@@ -38,6 +47,8 @@ module gerpsquirrel.quadtree {
         insert(item: Item<Type>) {
             this._items.push(item);
 
+            // this._items.length > this._capacity => redistribute if over capacity
+            // this._children.length > 0 => redistribute since items must only be placed in leaf nodes
             if (this._items.length > this._capacity || this._children.length > 0) {
                 if (this._children.length == 0) {
                     // create child nodes
@@ -69,18 +80,24 @@ module gerpsquirrel.quadtree {
         }
 
         itemsInBox(box: Box): Array<Item<Type>> {
+            const hasChildren = this._children.length > 0;
 
-            const topLeftItems = this._children.length > 0 && box.intersects(this._children[Position.TopLeft]._bounds) ?
-                this._children[Position.TopLeft].itemsInBox(box) : [];
+            const topLeftChild = this._children[Position.TopLeft];
+            const topRightChild = this._children[Position.TopRight];
+            const bottomRightChild = this._children[Position.BottomRight];
+            const bottomLeftChild = this._children[Position.BottomLeft];
 
-            const topRightItems = this._children.length > 0 && box.intersects(this._children[Position.TopRight]._bounds) ?
-                this._children[Position.TopRight].itemsInBox(box) : [];
+            const topLeftItems = hasChildren && box.intersects(topLeftChild._bounds) ?
+                topLeftChild.itemsInBox(box) : [];
 
-            const bottomRightItems = this._children.length > 0 && box.intersects(this._children[Position.BottomRight]._bounds) ?
-                this._children[Position.BottomRight].itemsInBox(box) : [];
+            const topRightItems = hasChildren && box.intersects(topRightChild._bounds) ?
+                topRightChild.itemsInBox(box) : [];
 
-            const bottomLeftItems = this._children.length > 0 && box.intersects(this._children[Position.BottomLeft]._bounds) ?
-                this._children[Position.BottomLeft].itemsInBox(box) : [];
+            const bottomRightItems = hasChildren && box.intersects(bottomRightChild._bounds) ?
+                bottomRightChild.itemsInBox(box) : [];
+
+            const bottomLeftItems = hasChildren && box.intersects(bottomLeftChild._bounds) ?
+                bottomLeftChild.itemsInBox(box) : [];
 
             return this._items.concat(topLeftItems, topRightItems, bottomRightItems, bottomLeftItems);
         }
@@ -96,17 +113,12 @@ module gerpsquirrel.quadtree {
         } 
 
         allBounds(): Array<Box> {
-            const topLeftBounds = this._children.length > 0 ?
-                this._children[Position.TopLeft].allBounds() : [];
+            const hasChildren = this._children.length > 0;
 
-            const topRightBounds = this._children.length > 0 ?
-                this._children[Position.TopRight].allBounds() : [];
-
-            const bottomRightBounds = this._children.length > 0 ?
-                this._children[Position.BottomRight].allBounds() : [];
-
-            const bottomLeftBounds = this._children.length > 0 ?
-                this._children[Position.BottomLeft].allBounds() : [];
+            const topLeftBounds = hasChildren ? this._children[Position.TopLeft].allBounds() : [];
+            const topRightBounds = hasChildren? this._children[Position.TopRight].allBounds() : [];
+            const bottomRightBounds = hasChildren? this._children[Position.BottomRight].allBounds() : [];
+            const bottomLeftBounds = hasChildren? this._children[Position.BottomLeft].allBounds() : [];
 
             return [this._bounds].concat(topLeftBounds, topRightBounds, bottomRightBounds, bottomLeftBounds);
         }
