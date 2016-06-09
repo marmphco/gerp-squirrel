@@ -58,7 +58,7 @@ module gerpsquirrel.quadtree {
                     const topCenter = this._bounds.center[1] - quarterSize[1];
                     const bottomCenter = this._bounds.center[1] + quarterSize[1];
 
-                    this._children = [ // do push(...) instead?
+                    this._children = [
                         new QuadTree<Type>(new Box([leftCenter, topCenter], quarterSize), this._capacity),
                         new QuadTree<Type>(new Box([rightCenter, topCenter], quarterSize), this._capacity),
                         new QuadTree<Type>(new Box([rightCenter, bottomCenter], quarterSize), this._capacity),

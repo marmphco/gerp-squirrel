@@ -245,6 +245,7 @@ module client {
                         }
 
                         collisionInfo = collision.hullIntersection(thing.hull, otherThing.hull);
+
                         if (collisionInfo) {
                             collision.resolveCollision(thing.hull.actor, otherThing.hull.actor, collisionInfo);
                         }

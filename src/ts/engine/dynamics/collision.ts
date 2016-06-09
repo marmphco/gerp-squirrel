@@ -44,15 +44,15 @@ module gerpsquirrel.collision {
 
         toLocalSpace(u: Vector2): Vector2 {
             return [
-                v2.projectedLength(u, this.tangent()),
-                v2.projectedLength(u, this.normal())
+                v2.dot(u, this.tangent()),
+                v2.dot(u, this.normal())
             ];
         }
 
         fromLocalSpace(u: Vector2): Vector2 {
             return [
-                v2.projectedLength(u, this.toLocalSpace([1, 0])),
-                v2.projectedLength(u, this.toLocalSpace([0, 1]))
+                v2.dot(u, this.toLocalSpace([1, 0])),
+                v2.dot(u, this.toLocalSpace([0, 1]))
             ];
         }
     }
