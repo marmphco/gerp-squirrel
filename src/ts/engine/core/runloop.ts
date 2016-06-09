@@ -10,6 +10,7 @@ module gerpsquirrel {
 
     export interface RunLoop {
         run(): void;
+        reset(): void;
         scheduleUpdateFunction(func: UpdateFunction, removalPredicate: () => boolean): void;
         scheduleRenderFunction(func: RenderFunction, removalPredicate: () => boolean): void;
         removeAllUpdateFunctions(): void;
@@ -51,6 +52,9 @@ module gerpsquirrel {
                     
                     elapsedTime -= updateInterval;
                 }
+            },
+            reset: function() {
+                timeOflastRender = (new Date()).getTime();
             },
             scheduleUpdateFunction: function(func: UpdateFunction, removalPredicate: () => boolean) {
                 pendingUpdateFunctions.push({

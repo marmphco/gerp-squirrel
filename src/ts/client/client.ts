@@ -55,6 +55,22 @@ module client {
         return thing;
     }
 
+
+    var _runLoopHandle: number = null;
+    var _renderLoop: gs.RunLoop = null;
+    export function toggleSimulation() {
+        if (_runLoopHandle != null)
+        {
+            clearInterval(_runLoopHandle);
+            _runLoopHandle = null;
+        }
+        else
+        {
+            _renderLoop.reset();
+            _runLoopHandle = setInterval(_renderLoop.run, 1000 / 30);
+        }
+    }
+
     export function init(element: HTMLCanvasElement) {
         const context = element.getContext('2d');
         const renderLoop = gs.RunLoopMake(1000 / 30);
@@ -296,6 +312,7 @@ module client {
             }
         }, gs.forever);
 
-        setInterval(renderLoop.run, 1000 / 30);
+        _renderLoop = renderLoop;
+        toggleSimulation();
     }
 }
