@@ -36,6 +36,10 @@ module gerpsquirrel.dynamics {
             return this._center;
         }
 
+        centerInterpolated(t: number): Vector2 {
+            return v2.add(this._center, v2.scale(this.velocity(), t));
+        }
+
         setCenter(center: Vector2) {
             var velocity = this.velocity();
             this._center = center;
@@ -108,6 +112,17 @@ module gerpsquirrel.dynamics {
                 -sin * u[0] + cos * u[1],
             ];
             return v2.add(this._center, rotated);
+        }
+
+        fromLocalSpaceInterpolated(u: Vector2, t: number): Vector2 {
+            const adjustedOrientation = this._orientation + this.angularVelocity() * t;
+            const sin = Math.sin(adjustedOrientation);
+            const cos = Math.cos(adjustedOrientation);
+            const rotated: Vector2 = [
+                cos * u[0] + sin * u[1],
+                -sin * u[0] + cos * u[1],
+            ];
+            return v2.add(this.centerInterpolated(t), rotated);
         }
 
         // Dynamics Methods

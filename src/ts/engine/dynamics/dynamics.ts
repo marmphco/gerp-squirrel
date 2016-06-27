@@ -58,6 +58,11 @@ module gerpsquirrel.dynamics {
             return this._cachedWorldVertices;
         }
 
+        worldVerticesInterpolated(t: number) {
+            // cant cache these
+            return this._vertices.map((vertex) => this.actor.fromLocalSpaceInterpolated(vertex, t));
+        }
+
         worldBounds() {
             if (!this._cachedBounds
                 || this._boundsCenter[0] != this.actor.center()[0]

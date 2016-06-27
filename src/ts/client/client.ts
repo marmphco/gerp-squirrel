@@ -30,6 +30,8 @@ module client {
         center: Vector2;
     }
 
+    var VIRTUAL_TIMESTEP = 30 / 1000;
+
     class Thing implements render.Renderable<ThingRenderInfo> {
         hull: dynamics.ConvexHull;
 
@@ -41,10 +43,10 @@ module client {
             this.hull.actor.momentOfInertia = dynamics.convexMomentOfInertia(this.hull);
         }
 
-        renderInfo(timeIntoFrame: number) {
+        renderInfo(elapsedTime: number, t: number) {
             return {
-                vertices: this.hull.worldVertices(),
-                center: this.hull.actor.center()
+                vertices: this.hull.worldVerticesInterpolated(t),
+                center: this.hull.actor.centerInterpolated(t)
             }
         }
     }
@@ -54,7 +56,6 @@ module client {
         thing.hull.actor.setCenter([Math.random()*bounds[0], Math.random()*bounds[1]]);
         return thing;
     }
-
 
     var _runLoopHandle: number = null;
     var _renderLoop: gs.RunLoop = null;
@@ -67,7 +68,7 @@ module client {
         else
         {
             _renderLoop.reset();
-            _runLoopHandle = setInterval(_renderLoop.run, 1000 / 30);
+            _runLoopHandle = setInterval(_renderLoop.run, 1000 / 60);
         }
     }
 
@@ -111,7 +112,13 @@ module client {
 
             context.fillRect(info.center[0] - 2, info.center[1] - 2, 4, 4);
         });
-        renderLoop.scheduleRenderFunction(thingRenderer.run, gs.forever);
+        renderLoop.scheduleRenderFunction((elapsedTime, t) => {
+
+            sharedProfiler().begin("render.things");
+            thingRenderer.run(elapsedTime, t);
+            sharedProfiler().end("render.things");
+
+        }, gs.forever);
 
         var things: Array<Thing> = [];
         for (var i = 0; i < 400; ++i) {
@@ -163,12 +170,13 @@ module client {
         var thingCollisionTree: QuadTree<Thing> = null;
         var totalThingCenter: Vector2;
         var totalThingHalfSize: Vector2;
+        var updateStepProfileResults = null;
         renderLoop.scheduleUpdateFunction((timestep) => {
             sharedProfiler().begin("everything");
             sharedProfiler().begin("simulation.integration");
 
             things.forEach((thing) => {
-                thing.hull.actor.advance(timestep);
+                thing.hull.actor.advance(VIRTUAL_TIMESTEP);
             });
 
             sharedProfiler().end("simulation.integration");
@@ -257,8 +265,7 @@ module client {
             sharedProfiler().end("collision.total");
             sharedProfiler().end("everything");
 
-            const results = sharedProfiler().results();
-            renderProfileResults(results, 0, 20);
+            updateStepProfileResults = sharedProfiler().results();
             sharedProfiler().clear();
 
         }, gs.forever);
@@ -310,6 +317,14 @@ module client {
                         bounds.halfSize[0] * 2,
                         bounds.halfSize[1] * 2);
                 });
+            }
+
+            const renderStepProfileResults = sharedProfiler().results();
+            sharedProfiler().clear();
+            renderProfileResults(renderStepProfileResults, 100, 20);
+
+            if (updateStepProfileResults) {
+                renderProfileResults(updateStepProfileResults, 0, 20);
             }
         }, gs.forever);
 

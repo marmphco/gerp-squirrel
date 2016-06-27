@@ -1,11 +1,11 @@
 module gerpsquirrel {
     
     export interface RenderFunction {
-        (timestep: number): void;
+        (elapsedTime: number, t: number): void;
     }
 
     export interface UpdateFunction {
-        (timestep: number): void;
+        (elapsedTime: number): void;
     }
 
     export interface RunLoop {
@@ -32,9 +32,9 @@ module gerpsquirrel {
 
         return {
             run: function() {
-                const timeIntoFrame = elapsedTime / updateInterval;
+                const updateIntervalFraction = elapsedTime / updateInterval;
                 renderFunctions = renderFunctions.filter((context) => {
-                    context.item(timeIntoFrame);
+                    context.item(elapsedTime, updateIntervalFraction);
                     return context.removalPredicate();
                 }).concat(pendingRenderFunctions);
                 pendingRenderFunctions = [];
@@ -45,7 +45,7 @@ module gerpsquirrel {
                 
                 while (elapsedTime >= updateInterval) {
                     updateFunctions = updateFunctions.filter((context) => {
-                        context.item(updateInterval/1000);
+                        context.item(updateInterval);
                         return context.removalPredicate();
                     }).concat(pendingUpdateFunctions);
                     pendingUpdateFunctions = [];

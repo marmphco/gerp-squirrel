@@ -1,7 +1,7 @@
 module gerpsquirrel.render {
 
     export interface Renderable<T> {
-        renderInfo: (timeIntoFrame: number) => T;
+        renderInfo: (elapsedTime: number, updateIntervalFraction: number) => T;
     }
 
     export interface Renderer<T> {
@@ -17,9 +17,9 @@ module gerpsquirrel.render {
         var items: Array<Renderable<T>> = [];
 
         return {
-            run: function(timeIntoFrame: number) {
+            run: function(elapsedTime: number, updateIntervalFraction: number) {
                 items.forEach(function(item: Renderable<T>) {
-                    render(context, item.renderInfo(timeIntoFrame));
+                    render(context, item.renderInfo(elapsedTime, updateIntervalFraction));
                 });
             },
             addItem: function(item: Renderable<T>) {
