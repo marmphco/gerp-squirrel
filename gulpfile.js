@@ -3,11 +3,20 @@ var tsc = require('gulp-typescript');
 var del = require('del');
 var merge = require('merge2');
 
+var TEST_CLIENTS = [
+    'client',
+    'sample-profiling'
+]
+
 gulp.task('default', ['client']);
 
-gulp.task('clean', ['client-clean', 'gerp-squirrel-clean']);
+gulp.task('clean', ['gerp-squirrel-clean'].concat(TEST_CLIENTS.map(function(client) {
+    return client + '-clean';
+})));
 
-generateTasksForClient('client');
+TEST_CLIENTS.forEach(function(client) {
+    generateTasksForClient(client);
+});
 
 // Task Generators
 
