@@ -1,8 +1,6 @@
 {
     "compilerOptions": {
-        "noImplicitAny": true,
         "sourceMap": false,
-        "removeComments": true,
         "outFile": "client.js"
     }
 }

@@ -41,10 +41,10 @@ function generateTasksForClient(clientName) {
     });
 
     gulp.task(clientBuild, ['gerp-squirrel'], function() {
-        return tsc.createProject(projectDir + '/ts/tsconfig.json').src()
-            .pipe(tsc({
-                out: clientName + '.js'
-            })).js
+        var project = tsc.createProject(projectDir + '/ts/tsconfig.json');
+        return project.src()
+            .pipe(tsc(project))
+            .js
             .pipe(gulp.dest(projectDir + '/build/js/'));
     });
 
@@ -70,12 +70,10 @@ gulp.task('gerp-squirrel-clean', function() {
 });
 
 gulp.task('gerp-squirrel-ts', function() {
-    var result = tsc.createProject('projects/engine/ts/tsconfig.json')
+    var project = tsc.createProject('projects/engine/ts/tsconfig.json');
+    var result = project
         .src()
-        .pipe(tsc({
-            declaration: true,
-            out: 'gerp-squirrel.js'
-        }));
+        .pipe(tsc(project));
 
     return merge([
             result.js.pipe(gulp.dest('projects/engine/build/js')),
