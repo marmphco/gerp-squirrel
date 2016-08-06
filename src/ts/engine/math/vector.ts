@@ -1,6 +1,6 @@
 module gerpsquirrel.vector {
 
-    type Vector = Array<number>;
+    export type Vector = Array<number>;
 
     export function by(n: number, builder: (i: number) => number): Vector {
         var v = [];

@@ -4,12 +4,13 @@
 
 module gerpsquirrel.constraint {
 
-	import v2 = gerpsquirrel.vector2;
+	import v2 = vector2;
 
-    import Region = gerpsquirrel.region.Region;
+    import Actor = dynamics.Actor;
+    import Region = region.Region;
     import Vector2 = v2.Vector2;
 
-    export function constrainToRegion(actor: Dynamics.Actor, r: Region) {
+    export function constrainToRegion(actor: Actor, r: Region) {
         if (!r.containsVector(actor.center())) {
         	const newPosition = r.nearestBoundaryVectorToVector(actor.center());
         	const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center()));
@@ -18,7 +19,7 @@ module gerpsquirrel.constraint {
         }
     }
 
-    export function constrainToRegionComplement(actor: Dynamics.Actor, r: Region) {
+    export function constrainToRegionComplement(actor: Actor, r: Region) {
     	if (r.containsVector(actor.center())) {
             const newPosition = r.nearestBoundaryVectorToVector(actor.center());
             const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center()));
@@ -27,7 +28,7 @@ module gerpsquirrel.constraint {
         }
     }
 
-    export function constrainToBoundary(actor: Dynamics.Actor, r: Region) {
+    export function constrainToBoundary(actor: Actor, r: Region) {
     	const newPosition = r.nearestBoundaryVectorToVector(actor.center());
     	const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center()));
     	actor.setCenter(newPosition);

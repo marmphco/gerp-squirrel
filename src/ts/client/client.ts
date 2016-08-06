@@ -1,14 +1,4 @@
-/// <reference path="../engine/core/runloop.ts" />
-/// <reference path="../engine/core/event.ts" />
-/// <reference path="../engine/math/vector.ts" />
-/// <reference path="../engine/math/box.ts" />
-/// <reference path="../engine/render/render.ts" />
-/// <reference path="../engine/input/mouse.ts" />
-/// <reference path="../engine/math/region.ts" />
-/// <reference path="../engine/dynamics/dynamics.ts" />
-/// <reference path="../engine/dynamics/collision.ts" />
-/// <reference path="../engine/dynamics/quadtree.ts" />
-/// <reference path="../engine/utility/profile.ts" />
+/// <reference path="../../dts/gerp-squirrel.d.ts" />
 
 module client {
 

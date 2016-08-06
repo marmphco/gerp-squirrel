@@ -117,12 +117,12 @@ module gerpsquirrel.region {
         radius: number;
 
         constructor(center: Vector2, radius: number) {
+            super((u: Vector2) => {
+                return v2.length(v2.subtract(u, center)) - radius;
+            });
+
             this.center = center;
             this.radius = radius;
-
-            super((u: Vector2) => {
-                return v2.length(v2.subtract(u, this.center)) - this.radius;
-            })
         }
     }
 
@@ -140,12 +140,9 @@ module gerpsquirrel.region {
         size: Vector2;
 
         constructor(origin: Vector2, size: Vector2) {
-            this.origin = origin;
-            this.size = size;
-
             super((u: Vector2) => {
-                const halfSize = v2.scale(this.size, 0.5);
-                const transformed = v2.subtract(u, v2.add(this.origin, halfSize));
+                const halfSize = v2.scale(size, 0.5);
+                const transformed = v2.subtract(u, v2.add(origin, halfSize));
                 const absolute: Vector2 = [Math.abs(transformed[0]), Math.abs(transformed[1])];
                 const distance = v2.subtract(absolute, halfSize);
 
@@ -153,6 +150,9 @@ module gerpsquirrel.region {
                 const positiveDistances: Vector2 = [Math.max(distance[0], 0.0), Math.max(distance[1], 0.0)];
                 return greatestNegativeOrZero + v2.length(positiveDistances);
             });
+
+            this.origin = origin;
+            this.size = size;
         }
     }
 }

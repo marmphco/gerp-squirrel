@@ -4,7 +4,7 @@ module gerpsquirrel.event {
         (item: T): void;
     }
 
-    type ReceiverID = number;
+    export type ReceiverID = number;
 
     export interface Source<T> {
         addReceiver(receiver: Receiver<T>): ReceiverID;

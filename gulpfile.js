@@ -3,22 +3,40 @@ var tsc = require('gulp-typescript');
 var less = require('gulp-less');
 var cache = require('gulp-cached');
 var del = require('del');
+var merge = require('merge2');
 
 gulp.task('default', ['process-html', 'process-css', 'process-js']);
 
 gulp.task('clean', function() {
     cache.caches = {};
     return del([
-        'build/'
+        'build/',
+        'src/dts/'
     ]);
 });
 
-gulp.task('process-js', function() {
-    return gulp.src('src/ts/client/client.ts')
+gulp.task('process-js', ['client']);
+
+gulp.task('client', ['gerp-squirrel'], function() {
+    return tsc.createProject('src/ts/client/tsconfig.json').src()
         .pipe(tsc({
-            out: 'gerp-squirrel.js'
+            out: 'client.js'
         })).js
         .pipe(gulp.dest('build/js/'));
+});
+
+gulp.task('gerp-squirrel', function() {
+    var result = tsc.createProject('src/ts/engine/tsconfig.json')
+        .src()
+        .pipe(tsc({
+            declaration: true,
+            out: 'gerp-squirrel.js'
+        }));
+
+    return merge([
+        result.js.pipe(gulp.dest('build/js')),
+        result.dts.pipe(gulp.dest('src/dts'))
+    ]);
 });
 
 gulp.task('process-html', function() {
