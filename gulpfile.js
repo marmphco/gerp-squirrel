@@ -1,14 +1,12 @@
 var gulp = require('gulp');
 var tsc = require('gulp-typescript');
 var less = require('gulp-less');
-var cache = require('gulp-cached');
 var del = require('del');
 var merge = require('merge2');
 
 gulp.task('default', ['process-html', 'process-css', 'process-js']);
 
 gulp.task('clean', function() {
-    cache.caches = {};
     return del([
         'build/',
         'src/dts/'
@@ -41,7 +39,6 @@ gulp.task('gerp-squirrel', function() {
 
 gulp.task('process-html', function() {
     return gulp.src('src/html/index.html')
-        .pipe(cache('html'))
         .pipe(gulp.dest('build'));
 });
 

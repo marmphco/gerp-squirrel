@@ -2,8 +2,7 @@
     "compilerOptions": {
         "declaration": true,
         "noImplicitAny": true,
-        "sourceMap": false,
-        "removeComments": true,
         "outFile": "gerp-squirrel.js"
+        "sourceMap": false
     }
 }
