@@ -1,8 +1,0 @@
-{
-    "compilerOptions": {
-        "declaration": true,
-        "noImplicitAny": true,
-        "outFile": "gerp-squirrel.js"
-        "sourceMap": false
-    }
-}

@@ -1,30 +1,67 @@
 var gulp = require('gulp');
 var tsc = require('gulp-typescript');
-var less = require('gulp-less');
 var del = require('del');
 var merge = require('merge2');
 
-gulp.task('default', ['process-html', 'process-css', 'process-js']);
+gulp.task('default', ['client']);
 
-gulp.task('clean', function() {
+gulp.task('clean', ['client-clean', 'gerp-squirrel-clean']);
+
+generateTasksForClient('client');
+
+// Task Generators
+
+function generateTasksForClient(clientName) {
+
+    var clientBuild = clientName + '-ts';
+    var clientHTML = clientName + '-html';
+    var clientCSS = clientName + '-css';
+    var clientClean = clientName + '-clean';
+
+    var projectDir = 'projects/'+ clientName;
+
+    gulp.task(clientName, [clientBuild, clientHTML, clientCSS], function() {
+        return gulp.src('projects/engine/build/js/gerp-squirrel.js')
+            .pipe(gulp.dest(projectDir + '/build/js/'));
+    });
+
+    gulp.task(clientClean, function() {
+        return del([
+            projectDir + '/build/'
+        ]);
+    });
+
+    gulp.task(clientBuild, ['gerp-squirrel'], function() {
+        return tsc.createProject(projectDir + '/ts/tsconfig.json').src()
+            .pipe(tsc({
+                out: clientName + '.js'
+            })).js
+            .pipe(gulp.dest(projectDir + '/build/js/'));
+    });
+
+    gulp.task(clientHTML, function() {
+        return gulp.src(projectDir + '/html/index.html')
+            .pipe(gulp.dest(projectDir + '/build/'));
+    });
+
+    gulp.task(clientCSS, function() {
+        return gulp.src(projectDir + '/css/**/*.css')
+            .pipe(gulp.dest(projectDir + '/build/css/'));
+    });
+}
+
+// Engine
+
+gulp.task('gerp-squirrel', ['gerp-squirrel-ts']);
+
+gulp.task('gerp-squirrel-clean', function() {
     return del([
-        'build/',
-        'src/dts/'
+        'projects/engine/build/'
     ]);
 });
 
-gulp.task('process-js', ['client']);
-
-gulp.task('client', ['gerp-squirrel'], function() {
-    return tsc.createProject('src/ts/client/tsconfig.json').src()
-        .pipe(tsc({
-            out: 'client.js'
-        })).js
-        .pipe(gulp.dest('build/js/'));
-});
-
-gulp.task('gerp-squirrel', function() {
-    var result = tsc.createProject('src/ts/engine/tsconfig.json')
+gulp.task('gerp-squirrel-ts', function() {
+    var result = tsc.createProject('projects/engine/ts/tsconfig.json')
         .src()
         .pipe(tsc({
             declaration: true,
@@ -32,24 +69,7 @@ gulp.task('gerp-squirrel', function() {
         }));
 
     return merge([
-        result.js.pipe(gulp.dest('build/js')),
-        result.dts.pipe(gulp.dest('src/dts'))
-    ]);
-});
-
-gulp.task('process-html', function() {
-    return gulp.src('src/html/index.html')
-        .pipe(gulp.dest('build'));
-});
-
-gulp.task('process-css', function() {
-    return gulp.src('src/css/**/*.less')
-        .pipe(less({
-            paths: ['src/css/']
-        }))
-        .pipe(gulp.dest('build/css/main.css'));
-});
-
-gulp.task('watch', function() {
-    return gulp.watch('src/ts/**/*.ts', ['process-js'])
+            result.js.pipe(gulp.dest('projects/engine/build/js')),
+            result.dts.pipe(gulp.dest('projects/engine/build/dts'))
+        ]);
 });

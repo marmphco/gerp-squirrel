@@ -1,4 +1,4 @@
-/// <reference path="../../dts/gerp-squirrel.d.ts" />
+/// <reference path="../../engine/build/dts/gerp-squirrel.d.ts" />
 
 module client {
 
