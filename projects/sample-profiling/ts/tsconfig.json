@@ -2,7 +2,6 @@
     "compilerOptions": {
         "noImplicitAny": true,
         "outFile": "sample-profiling.js",
-        "sourceMap": false,
-        "strictNullChecks": false
+        "sourceMap": false
     }
 }

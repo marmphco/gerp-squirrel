@@ -1,9 +1,11 @@
 /// <reference path="../core/event.ts" />
 /// <reference path="../math/vector.ts" />
-
+/*
 module gerpsquirrel.input {
 
-    import Vector2 = gerpsquirrel.vector2.Vector2;
+    import Vector2 = vector2.Vector2;
+    import Source = event.Source;
+    import Stream = event.Stream;
 
     export interface MouseInfo {
         position: Vector2
@@ -13,10 +15,10 @@ module gerpsquirrel.input {
         attachToElement(element: Element): void;
         detachFromElement(): void;
 
-        downSource(): event.Source<MouseInfo>;
-        upSource(): event.Source<MouseInfo>;
-        clickSource(): event.Source<MouseInfo>;
-        moveSource(): event.Source<MouseInfo>;
+        downSource(): Source<MouseInfo>;
+        upSource(): Source<MouseInfo>;
+        clickSource(): Source<MouseInfo>;
+        moveSource(): Source<MouseInfo>;
     }
 
     export function MouseInputMake(): MouseInput {
@@ -25,17 +27,17 @@ module gerpsquirrel.input {
 
     class _MouseInput implements MouseInput {
         _element: Element;
-        _downStream: event.Stream<MouseInfo>;
-        _upStream: event.Stream<MouseInfo>;
-        _clickStream: event.Stream<MouseInfo>;
-        _moveStream: event.Stream<MouseInfo>;
+        _downStream: Stream<MouseInfo>;
+        _upStream: Stream<MouseInfo>;
+        _clickStream: Stream<MouseInfo>;
+        _moveStream: Stream<MouseInfo>;
 
         constructor() {
             this._element = null;
-            this._downStream = event.StreamMake();
-            this._upStream = event.StreamMake();
-            this._clickStream = event.StreamMake();
-            this._moveStream = event.StreamMake();
+            this._downStream = new Stream();
+            this._upStream = new Stream();
+            this._clickStream = new Stream();
+            this._moveStream = new Stream();
         }
 
         attachToElement(element: Element): void {
@@ -90,4 +92,4 @@ module gerpsquirrel.input {
             })
         }
     }
-}
+}*/
