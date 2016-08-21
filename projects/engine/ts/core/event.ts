@@ -1,24 +1,14 @@
 module gerpsquirrel.event {
 
-    interface Source<T> {
-        register(handler: (item: T) => void);
-    }
-
-    export interface Stream<T> {
-        map<U>(mapper: (item: T) => U): Stream<U>;
-        filter(predicate: (item: T) => boolean): Stream<T>;
-        handle(handler: (item: T) => void);
+    export interface Stream<SourceType, T> {
+        map<U>(mapper: (item: T) => U): Stream<SourceType, U>;
+        filter(predicate: (item: T) => boolean): Stream<SourceType, T>;
+        handle(handler: (item: T) => void): (item: SourceType) => void;
     }
 
     type Handler<T> = (item: T) => void;
 
-    // TODO needs a better name
-    interface HandlerGenerator<T, U> {
-        _source: Source<U>;
-        generate(handler: (item: T) => void): (item: U) => void;
-    }
-
-    function map<SourceType, T, U>(parent: HandlerGenerator<T, SourceType>, mapper: (item: T) => U): _ProcessedStream<SourceType, T, U> {
+    function map<SourceType, T, U>(parent: Stream<SourceType, T>, mapper: (item: T) => U): _ProcessedStream<SourceType, T, U> {
         return new _ProcessedStream(parent, (handler: Handler<U>) => {
             return (item: T) => {
                 handler(mapper(item));
@@ -26,7 +16,7 @@ module gerpsquirrel.event {
         });
     }
 
-    function filter<SourceType, T>(parent: HandlerGenerator<T, SourceType>, predicate: (item: T) => boolean): _ProcessedStream<SourceType, T, T> {
+    function filter<SourceType, T>(parent: Stream<SourceType, T>, predicate: (item: T) => boolean): _ProcessedStream<SourceType, T, T> {
         return new _ProcessedStream(parent, (handler: Handler<T>) => {
             return (item: T) => {
                 if (predicate(item)) {
@@ -36,45 +26,33 @@ module gerpsquirrel.event {
         });
     }
 
-    class _BaseStream<T> implements Stream<T>, HandlerGenerator<T, T> {
+    export class BaseStream<T> implements Stream<T, T> {
 
-        _source: Source<T>;
-
-        constructor(source: Source<T>) {
-            this._source = source;
-        }
-
-        generate(handler: (item: T) => void): (item: T) => void {
+        handle(handler: (item: T) => void): (item: T) => void {
             return handler;
         }
 
-        map<U>(mapper: (item: T) => U): Stream<U> {
+        map<U>(mapper: (item: T) => U): Stream<T, U> {
             return map(this, mapper);
         }
 
-        filter(predicate: (item: T) => boolean): Stream<T> {
+        filter(predicate: (item: T) => boolean): Stream<T, T> {
             return filter(this, predicate);
-        }
-
-        handle(handler: (item: T) => void) {
-            this._source.register(handler);
         }
     }
 
-    class _ProcessedStream<SourceType, InputType, OutputType> implements Stream<OutputType>, HandlerGenerator<OutputType, SourceType> {
+    class _ProcessedStream<SourceType, InputType, OutputType> implements Stream<SourceType, OutputType> {
 
-        _source: Source<SourceType>;
-        private _parent: HandlerGenerator<InputType, SourceType>;
+        private _parent: Stream<SourceType, InputType>;
         private _generator: (handler: Handler<OutputType>) => Handler<InputType>;
 
-        constructor(parent: HandlerGenerator<InputType, SourceType>, generator: (handler: Handler<OutputType>) => Handler<InputType>) {
-            this._source = parent._source;
+        constructor(parent: Stream<SourceType, InputType>, generator: (handler: Handler<OutputType>) => Handler<InputType>) {
             this._parent = parent;
             this._generator = generator;
         }
 
-        generate(handler: Handler<OutputType>): Handler<SourceType> {
-            return this._parent.generate(this._generator(handler));
+        handle(handler: Handler<OutputType>): Handler<SourceType> {
+            return this._parent.handle(this._generator(handler));
         }
 
         map<U>(mapper: (item: OutputType) => U): _ProcessedStream<SourceType, OutputType, U> {
@@ -83,10 +61,6 @@ module gerpsquirrel.event {
 
         filter(predicate: (item: OutputType) => boolean): _ProcessedStream<SourceType, OutputType, OutputType> {
             return filter(this, predicate);
-        }
-
-        handle(handler: (item: OutputType) => void) {
-            this._source.register(this.generate(handler));
         }
     }
 

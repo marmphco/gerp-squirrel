@@ -2,21 +2,30 @@
 
 module sampleprofiling {
 
-    import StreamGenerator = gerpsquirrel.event.StreamGenerator;
+    import BaseStream = gerpsquirrel.event.BaseStream;
 
     export function init(element: HTMLCanvasElement) {
         const context = element.getContext('2d');
-        console.log("herpa");
 
-        const generator = new StreamGenerator<number, number>();
+        const generator = new BaseStream<number>();
 
-        const handler = generator.filter((item: number) => {
-            return item % 2 == 0;
-        }).filter((item: number) => {
-            return item % 3 == 0;
-        }).handle((item: number) => {
-            console.log(item);
-        });
+        const handler = generator
+            .filter((item: number) => {
+                return item % 2 == 0;
+            })
+            .map((item: number) => {
+                var result = "";
+                for (var i = 0; i < item; i++) {
+                    result += item.toString();
+                }
+                return result;
+            })
+            .filter((item: string) => {
+                return item.length > 6
+            })
+            .handle((item: string) => {
+                console.log(item);
+            });
 
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 6].forEach(handler);
     }
