@@ -1,6 +1,6 @@
 /// <reference path="../../engine/build/dts/gerp-squirrel.d.ts" />
 
-module sampleprofiling {
+module samplestream {
 
     import BaseStream = gerpsquirrel.event.BaseStream;
 

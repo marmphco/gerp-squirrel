@@ -5,7 +5,7 @@ var merge = require('merge2');
 
 var TEST_CLIENTS = [
     'client',
-    'sample-profiling'
+    'sample-stream'
 ]
 
 gulp.task('default', ['client']);
