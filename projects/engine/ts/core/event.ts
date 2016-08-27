@@ -2,13 +2,10 @@ module gerpsquirrel.event {
 
     export type HandlerID = number;
 
-    export interface Stream<SourceType, T> { 
+    export interface Stream<T> { 
         // Stream Transformations
-        map<U>(mapper: (item: T) => U): Stream<SourceType, U>;
-        filter(predicate: (item: T) => boolean): Stream<SourceType, T>;
-        
-        // Generating Handlers (just for convenience)
-        generate(handler: (item: T) => void): (item: SourceType) => void;
+        map<U>(mapper: (item: T) => U): Stream<U>;
+        filter(predicate: (item: T) => boolean): Stream<T>;
 
         // Handling Streams 
         handle(handler: (item: T) => void): HandlerID;
@@ -17,7 +14,7 @@ module gerpsquirrel.event {
 
     type Handler<T> = (item: T) => void;
 
-    function map<SourceType, T, U>(parent: Stream<SourceType, T>, mapper: (item: T) => U): ProcessedStream<SourceType, T, U> {
+    function map<T, U>(parent: Stream<T>, mapper: (item: T) => U): ProcessedStream<T, U> {
         return new ProcessedStream(parent, (handler: Handler<U>) => {
             return (item: T) => {
                 handler(mapper(item));
@@ -25,7 +22,7 @@ module gerpsquirrel.event {
         });
     }
 
-    function filter<SourceType, T>(parent: Stream<SourceType, T>, predicate: (item: T) => boolean): ProcessedStream<SourceType, T, T> {
+    function filter<T>(parent: Stream<T>, predicate: (item: T) => boolean): ProcessedStream<T, T> {
         return new ProcessedStream(parent, (handler: Handler<T>) => {
             return (item: T) => {
                 if (predicate(item)) {
@@ -35,7 +32,7 @@ module gerpsquirrel.event {
         });
     }
 
-    export class BaseStream<T> implements Stream<T, T> {
+    export class BaseStream<T> implements Stream<T> {
 
         private _handlers: Array<Handler<T>>;
         private _currentID: number;
@@ -49,11 +46,11 @@ module gerpsquirrel.event {
             return handler;
         }
 
-        map<U>(mapper: (item: T) => U): Stream<T, U> {
+        map<U>(mapper: (item: T) => U): Stream<U> {
             return map(this, mapper);
         }
 
-        filter(predicate: (item: T) => boolean): Stream<T, T> {
+        filter(predicate: (item: T) => boolean): Stream<T> {
             return filter(this, predicate);
         }
 
@@ -73,25 +70,21 @@ module gerpsquirrel.event {
         }
     }
 
-    class ProcessedStream<SourceType, InputType, OutputType> implements Stream<SourceType, OutputType> {
+    class ProcessedStream<InputType, OutputType> implements Stream<OutputType> {
 
-        private _parent: Stream<SourceType, InputType>;
+        private _parent: Stream<InputType>;
         private _generator: (handler: Handler<OutputType>) => Handler<InputType>;
 
-        constructor(parent: Stream<SourceType, InputType>, generator: (handler: Handler<OutputType>) => Handler<InputType>) {
+        constructor(parent: Stream<InputType>, generator: (handler: Handler<OutputType>) => Handler<InputType>) {
             this._parent = parent;
             this._generator = generator;
         }
 
-        generate(handler: Handler<OutputType>): Handler<SourceType> {
-            return this._parent.generate(this._generator(handler));
-        }
-
-        map<U>(mapper: (item: OutputType) => U): ProcessedStream<SourceType, OutputType, U> {
+        map<U>(mapper: (item: OutputType) => U): ProcessedStream<OutputType, U> {
             return map(this, mapper);
         }
 
-        filter(predicate: (item: OutputType) => boolean): ProcessedStream<SourceType, OutputType, OutputType> {
+        filter(predicate: (item: OutputType) => boolean): ProcessedStream<OutputType, OutputType> {
             return filter(this, predicate);
         }
 

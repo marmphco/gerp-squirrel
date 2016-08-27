@@ -9,7 +9,7 @@ module sampleprofiling {
 
         const stream = new BaseStream<number>();
 
-        const handler = stream
+        stream
             .filter((item: number) => {
                 return item % 2 == 0;
             })
@@ -23,11 +23,13 @@ module sampleprofiling {
             .filter((item: string) => {
                 return item.length > 6
             })
-            .generate((item: string) => {
+            .handle((item: string) => {
                 console.log(item);
             });
 
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 6].forEach(handler);
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 6].forEach((num) => {
+            stream.push(num);
+        });
 
         stream.handle((item: number) => {
             console.log("Base Handling " + item)
