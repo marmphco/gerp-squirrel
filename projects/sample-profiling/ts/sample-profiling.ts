@@ -7,9 +7,9 @@ module sampleprofiling {
     export function init(element: HTMLCanvasElement) {
         const context = element.getContext('2d');
 
-        const generator = new BaseStream<number>();
+        const stream = new BaseStream<number>();
 
-        const handler = generator
+        const handler = stream
             .filter((item: number) => {
                 return item % 2 == 0;
             })
@@ -23,10 +23,38 @@ module sampleprofiling {
             .filter((item: string) => {
                 return item.length > 6
             })
-            .handle((item: string) => {
+            .generate((item: string) => {
                 console.log(item);
             });
 
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 6].forEach(handler);
+
+        stream.handle((item: number) => {
+            console.log("Base Handling " + item)
+        });
+
+        const processedStream = stream.filter((item: number) => {
+            return Math.sqrt(item) - Math.floor(Math.sqrt(item)) == 0;
+        })
+
+        const firstHandler = processedStream.handle((item: number) => {
+            console.log("Processed Handling " + item)
+        })
+
+        const secondHandler = processedStream.handle((item: number) => {
+            console.log("Processed Handling again " + item)
+        })
+
+        stream.push(55);
+        stream.push(16);
+        stream.push(43);
+        stream.push(9);
+
+        processedStream.removeHandler(firstHandler);
+
+        stream.push(55);
+        stream.push(16);
+        stream.push(43);
+        stream.push(9);
     }
 }
