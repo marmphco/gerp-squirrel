@@ -4,12 +4,10 @@
     <title>sample-profiling</title>
 </head>
 <body>
-    <canvas width="800" height="600" id="main-canvas">no canvas :(</canvas>
     <script type="text/javascript" src="js/gerp-squirrel.js"></script>
     <script type="text/javascript" src="js/sample-profiling.js"></script>
     <script type="text/javascript">
-        sampleprofiling.init(document.getElementById('main-canvas'));
+        sampleprofiling.init();
     </script>
-    <button onclick="client.toggleSimulation()">Start/Stop</button>
 </body>
 </html>

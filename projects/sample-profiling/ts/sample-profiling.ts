@@ -4,59 +4,44 @@ module sampleprofiling {
 
     import BaseStream = gerpsquirrel.event.BaseStream;
 
-    export function init(element: HTMLCanvasElement) {
-        const context = element.getContext('2d');
+    export function init() {
+        const testData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        const stream = new BaseStream<number>()
 
-        const stream = new BaseStream<number>();
+        // Map
+        const mapID = stream
+            .map((x) => x.toString() + "-" + x.toString())
+            .handle((x) => {
+                console.log("map " + x)
+            })
 
-        stream
-            .filter((item: number) => {
-                return item % 2 == 0;
-            })
-            .map((item: number) => {
-                var result = "";
-                for (var i = 0; i < item; i++) {
-                    result += item.toString();
-                }
-                return result;
-            })
-            .filter((item: string) => {
-                return item.length > 6
-            })
-            .handle((item: string) => {
-                console.log(item);
-            });
+        testData.forEach((x) => stream.push(x))
+        stream.removeHandler(mapID)
 
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 6].forEach((num) => {
-            stream.push(num);
+        // Filter
+        const filterID = stream
+            .filter((x) => x % 2 == 0)
+            .handle((x) => {
+                console.log("filter " + x.toString())
+            })
+
+        testData.forEach((x) => stream.push(x))
+        stream.removeHandler(filterID)
+
+        // Buffer
+        const bufferID = stream.buffer(4).handle((buffer) => {
+            console.log("buffer " + buffer.map((x) => x.toString()).join(' '))
         });
 
-        stream.handle((item: number) => {
-            console.log("Base Handling " + item)
+        testData.forEach((x) => stream.push(x))
+        stream.removeHandler(bufferID)
+
+        // Window
+        const windowID = stream.window(4).handle((buffer) => {
+            console.log("window " + buffer.map((x) => x.toString()).join(' '))
         });
 
-        const processedStream = stream.filter((item: number) => {
-            return Math.sqrt(item) - Math.floor(Math.sqrt(item)) == 0;
-        })
-
-        const firstHandler = processedStream.handle((item: number) => {
-            console.log("Processed Handling " + item)
-        })
-
-        const secondHandler = processedStream.handle((item: number) => {
-            console.log("Processed Handling again " + item)
-        })
-
-        stream.push(55);
-        stream.push(16);
-        stream.push(43);
-        stream.push(9);
-
-        processedStream.removeHandler(firstHandler);
-
-        stream.push(55);
-        stream.push(16);
-        stream.push(43);
-        stream.push(9);
+        testData.forEach((x) => stream.push(x))
+        stream.removeHandler(windowID)
     }
 }

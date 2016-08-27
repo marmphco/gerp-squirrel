@@ -6,6 +6,11 @@ module gerpsquirrel.event {
         // Stream Transformations
         map<U>(mapper: (item: T) => U): Stream<U>;
         filter(predicate: (item: T) => boolean): Stream<T>;
+        buffer(n: number): Stream<T[]>;
+        window(n: number): Stream<T[]>;
+
+        // Combining Streams (needs to return new stream type)
+        // combine<U>(stream: Stream<U>): Stream<T | U>;
 
         // Handling Streams 
         handle(handler: (item: T) => void): HandlerID;
@@ -17,7 +22,7 @@ module gerpsquirrel.event {
     function map<T, U>(parent: Stream<T>, mapper: (item: T) => U): ProcessedStream<T, U> {
         return new ProcessedStream(parent, (handler: Handler<U>) => {
             return (item: T) => {
-                handler(mapper(item));
+                handler(mapper(item))
             };
         });
     }
@@ -26,24 +31,50 @@ module gerpsquirrel.event {
         return new ProcessedStream(parent, (handler: Handler<T>) => {
             return (item: T) => {
                 if (predicate(item)) {
-                    handler(item);
+                    handler(item)
                 }
-            };
-        });
+            }
+        })
     }
 
+    function buffer<T>(parent: Stream<T>, n: number): ProcessedStream<T, T[]> {
+        return new ProcessedStream(parent, (handler: Handler<T[]>) => {
+            
+            var buffer: T[] = []
+
+            return (item: T) => {
+                buffer.push(item)
+                if (buffer.length == n) {
+                    handler(buffer)
+                    buffer = []
+                }
+            }
+        })
+    }
+
+    function window<T>(parent: Stream<T>, n: number): ProcessedStream<T, T[]> {
+        return new ProcessedStream(parent, (handler: Handler<T[]>) => {
+            
+            var window: T[] = []
+
+            return (item: T) => {
+                window.push(item)
+                if (window.length == n) {
+                    handler(window)
+                    window.shift();
+                }
+            }
+        })
+    }
+    
     export class BaseStream<T> implements Stream<T> {
 
-        private _handlers: Array<Handler<T>>;
+        private _handlers: Handler<T>[];
         private _currentID: number;
 
         constructor() {
             this._handlers = [];
             this._currentID = 0;
-        }
-
-        generate(handler: (item: T) => void): (item: T) => void {
-            return handler;
         }
 
         map<U>(mapper: (item: T) => U): Stream<U> {
@@ -52,6 +83,14 @@ module gerpsquirrel.event {
 
         filter(predicate: (item: T) => boolean): Stream<T> {
             return filter(this, predicate);
+        }
+
+        buffer(n: number): Stream<T[]> {
+            return buffer(this, n);
+        }
+
+        window(n: number): Stream<T[]> {
+            return window(this, n);
         }
 
         handle(handler: (item: T) => void): HandlerID {
@@ -80,12 +119,20 @@ module gerpsquirrel.event {
             this._generator = generator;
         }
 
-        map<U>(mapper: (item: OutputType) => U): ProcessedStream<OutputType, U> {
+        map<U>(mapper: (item: OutputType) => U): Stream<U> {
             return map(this, mapper);
         }
 
-        filter(predicate: (item: OutputType) => boolean): ProcessedStream<OutputType, OutputType> {
+        filter(predicate: (item: OutputType) => boolean): Stream<OutputType> {
             return filter(this, predicate);
+        }
+
+        buffer(n: number): Stream<OutputType[]> {
+            return buffer(this, n);
+        }
+
+        window(n: number): Stream<OutputType[]> {
+            return window(this, n);
         }
 
         handle(handler: (item: OutputType) => void): HandlerID {
@@ -95,27 +142,5 @@ module gerpsquirrel.event {
         removeHandler(handlerID: HandlerID): void {
             this._parent.removeHandler(handlerID);
         }
-    }
-
-    function buffer<T>(n: number, f: (element: Array<T>) => void): (T) => void {
-        var buffer = [];
-        return (element: T) => {
-            buffer.push(element);
-            if (buffer.length == n) {
-                f(buffer);
-                buffer = [];
-            }
-        };
-    }
-
-    function rollingWindow<T>(n: number, f: (element: Array<T>) => void): (T) => void {
-        var buffer = [];
-        return (element: T) => {
-            buffer.push(element);
-            if (buffer.length == n) {
-                f(buffer);
-                buffer.shift();
-            }
-        };
     }
 }

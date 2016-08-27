@@ -15,19 +15,8 @@ module gerpsquirrel.input {
         type: MouseEventType
         position: Vector2
     }
-    
-    export interface MouseInput {
-        attachToElement(element: Element): void;
-        detachFromElement(): void;
 
-        stream(): Stream<MouseInfo>;
-    }
-
-    export function MouseInputMake(): MouseInput {
-        return new _MouseInput();
-    }
-
-    class _MouseInput implements MouseInput {
+    export class MouseInput {
         _element: Element;
         _stream: BaseStream<MouseInfo>;
 
@@ -51,35 +40,37 @@ module gerpsquirrel.input {
             this._element.removeEventListener("mousemove", this._moveListener);
         }
 
-        stream() { return this._stream; }
+        stream(): Stream<MouseInfo> { 
+            return this._stream; 
+        }
 
         private elementSpacePosition(event: MouseEvent): Vector2 {
             const rect = this._element.getBoundingClientRect();
             return [event.clientX - rect.left, event.clientY - rect.top];
         }
 
-        _downListener = (event: MouseEvent) => {
+        private _downListener = (event: MouseEvent) => {
             this._stream.push({
                 type: MouseEventType.Down,
                 position: this.elementSpacePosition(event)
             })
         }
 
-        _upListener = (event: MouseEvent) => {
+        private _upListener = (event: MouseEvent) => {
             this._stream.push({
                 type: MouseEventType.Up,
                 position: this.elementSpacePosition(event)
             })
         }
 
-        _clickListener = (event: MouseEvent) => {
+        private _clickListener = (event: MouseEvent) => {
             this._stream.push({
                 type: MouseEventType.Click,
                 position: this.elementSpacePosition(event)
             })
         }
 
-        _moveListener = (event: MouseEvent) => {
+        private _moveListener = (event: MouseEvent) => {
             this._stream.push({
                 type: MouseEventType.Move,
                 position: this.elementSpacePosition(event)

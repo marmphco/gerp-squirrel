@@ -13,8 +13,9 @@ module client {
     import Vector2 = v2.Vector2;
     import Box = gerpsquirrel.box.Box;
     import QuadTree = gerpsquirrel.quadtree.QuadTree;
-    import sharedProfiler = gerpsquirrel.profile.sharedProfiler;
+    import MouseInput = gerpsquirrel.input.MouseInput;
     import MouseEventType = gerpsquirrel.input.MouseEventType;
+    import sharedProfiler = gerpsquirrel.profile.sharedProfiler;
 
     interface ThingRenderInfo {
         vertices: Array<Vector2>;
@@ -131,7 +132,7 @@ module client {
         walls[2].hull.actor.setCenter([element.width / 2, element.height + 500]);
         walls[3].hull.actor.setCenter([-500, element.height / 2]);
 
-        const mouseInput = gerpsquirrel.input.MouseInputMake();
+        const mouseInput = new MouseInput();
         mouseInput.attachToElement(element);
 
         var dragging = false;
