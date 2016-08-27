@@ -1,13 +1,18 @@
 /// <reference path="../core/event.ts" />
 /// <reference path="../math/vector.ts" />
-/*
+
 module gerpsquirrel.input {
 
     import Vector2 = vector2.Vector2;
-    import Source = event.Source;
     import Stream = event.Stream;
+    import BaseStream = event.BaseStream;
+
+    export enum MouseEventType {
+        Up, Down, Click, Move
+    }
 
     export interface MouseInfo {
+        type: MouseEventType
         position: Vector2
     }
     
@@ -15,10 +20,7 @@ module gerpsquirrel.input {
         attachToElement(element: Element): void;
         detachFromElement(): void;
 
-        downSource(): Source<MouseInfo>;
-        upSource(): Source<MouseInfo>;
-        clickSource(): Source<MouseInfo>;
-        moveSource(): Source<MouseInfo>;
+        stream(): Stream<MouseInfo>;
     }
 
     export function MouseInputMake(): MouseInput {
@@ -27,17 +29,11 @@ module gerpsquirrel.input {
 
     class _MouseInput implements MouseInput {
         _element: Element;
-        _downStream: Stream<MouseInfo>;
-        _upStream: Stream<MouseInfo>;
-        _clickStream: Stream<MouseInfo>;
-        _moveStream: Stream<MouseInfo>;
+        _stream: BaseStream<MouseInfo>;
 
         constructor() {
             this._element = null;
-            this._downStream = new Stream();
-            this._upStream = new Stream();
-            this._clickStream = new Stream();
-            this._moveStream = new Stream();
+            this._stream = new BaseStream();
         }
 
         attachToElement(element: Element): void {
@@ -55,41 +51,39 @@ module gerpsquirrel.input {
             this._element.removeEventListener("mousemove", this._moveListener);
         }
 
-        downSource() { return this._downStream; }
+        stream() { return this._stream; }
 
-        upSource() { return this._upStream; }
-
-        clickSource() { return this._clickStream; }
-
-        moveSource() { return this._moveStream; }
-
-        _elementSpacePosition(event: MouseEvent): Vector2 {
+        private elementSpacePosition(event: MouseEvent): Vector2 {
             const rect = this._element.getBoundingClientRect();
             return [event.clientX - rect.left, event.clientY - rect.top];
         }
 
         _downListener = (event: MouseEvent) => {
-            this._downStream.publish({
-                position: this._elementSpacePosition(event)
+            this._stream.push({
+                type: MouseEventType.Down,
+                position: this.elementSpacePosition(event)
             })
         }
 
         _upListener = (event: MouseEvent) => {
-            this._upStream.publish({
-                position: this._elementSpacePosition(event)
+            this._stream.push({
+                type: MouseEventType.Up,
+                position: this.elementSpacePosition(event)
             })
         }
 
         _clickListener = (event: MouseEvent) => {
-            this._clickStream.publish({
-                position: this._elementSpacePosition(event)
+            this._stream.push({
+                type: MouseEventType.Click,
+                position: this.elementSpacePosition(event)
             })
         }
 
         _moveListener = (event: MouseEvent) => {
-            this._moveStream.publish({
-                position: this._elementSpacePosition(event)
+            this._stream.push({
+                type: MouseEventType.Move,
+                position: this.elementSpacePosition(event)
             })
         }
     }
-}*/
+}

@@ -14,6 +14,7 @@ module client {
     import Box = gerpsquirrel.box.Box;
     import QuadTree = gerpsquirrel.quadtree.QuadTree;
     import sharedProfiler = gerpsquirrel.profile.sharedProfiler;
+    import MouseEventType = gerpsquirrel.input.MouseEventType;
 
     interface ThingRenderInfo {
         vertices: Array<Vector2>;
@@ -137,24 +138,32 @@ module client {
         var draggedThing = null;
         var startDragOffset: Vector2 = [0, 0];
         var endOfDrag: Vector2 = [0, 0];
-        mouseInput.downSource().addReceiver((mouseInfo) => {
-            things.forEach((thing) => {
-                if (!dragging && dynamics.hullContains(thing.hull, mouseInfo.position)) {
-                    dragging = true;
-                    draggedThing = thing;
-                    startDragOffset = thing.hull.actor.toLocalSpace(mouseInfo.position);
+        mouseInput.stream()
+            .filter((mouseInfo) => mouseInfo.type == MouseEventType.Down)
+            .handle((mouseInfo) => {
+                things.forEach((thing) => {
+                    if (!dragging && dynamics.hullContains(thing.hull, mouseInfo.position)) {
+                        dragging = true;
+                        draggedThing = thing;
+                        startDragOffset = thing.hull.actor.toLocalSpace(mouseInfo.position);
+                        endOfDrag = mouseInfo.position;
+                    }
+                });
+            });
+
+        mouseInput.stream()
+            .filter((mouseInfo) => mouseInfo.type == MouseEventType.Up)
+            .handle((mouseInfo) => {
+                dragging = false;
+            });
+
+        mouseInput.stream()
+            .filter((mouseInfo) => mouseInfo.type == MouseEventType.Move)
+            .handle((mouseInfo) => {
+                if (dragging) {
                     endOfDrag = mouseInfo.position;
                 }
             });
-        });
-        mouseInput.upSource().addReceiver((mouseInfo) => {
-            dragging = false;
-        });
-        mouseInput.moveSource().addReceiver((mouseInfo) => {
-            if (dragging) {
-                endOfDrag = mouseInfo.position;
-            }
-        });
 
         var collisionInfo: collision.CollisionInfo = null;
         var thingCollisionTree: QuadTree<Thing> = null;
