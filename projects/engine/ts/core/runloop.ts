@@ -1,91 +1,73 @@
-module gerpsquirrel {
-    
-    export interface RenderFunction {
-        (elapsedTime: number, t: number): void;
+/// <reference path="stream.ts" />
+
+module gerpsquirrel.runloop {
+
+    import BaseStream = stream.BaseStream
+    import Stream = stream.Stream
+
+    export type Milliseconds = number;
+
+    export interface RenderContext {
+        // Time since last render
+        elapsedTime: Milliseconds
+        // The normalized time interval since the last update
+        t: number
     }
 
-    export interface UpdateFunction {
-        (elapsedTime: number): void;
+    export interface UpdateContext {
+        // Time since last update
+        updateInterval: Milliseconds
     }
 
-    export interface RunLoop {
-        run(): void;
-        reset(): void;
-        scheduleUpdateFunction(func: UpdateFunction, removalPredicate: () => boolean): void;
-        scheduleRenderFunction(func: RenderFunction, removalPredicate: () => boolean): void;
-        removeAllUpdateFunctions(): void;
-        removeAllRenderFunctions(): void;
-    }
+    export class RunLoop {
+        
+        private _elapsedTime: Milliseconds
+        private _updateInterval: Milliseconds
+        private _lastRenderTime: number
 
-    interface SchedulingContext<T> {
-        item: T;
-        removalPredicate: () => boolean;
-    }
+        private _renderStream: BaseStream<RenderContext>
+        private _updateStream: BaseStream<UpdateContext>
 
-    export function RunLoopMake(updateInterval: number): RunLoop {
-        var elapsedTime: number = 0
-        var timeOflastRender: number = (new Date()).getTime()
-        var updateFunctions: Array<SchedulingContext<UpdateFunction>> = [];
-        var renderFunctions: Array<SchedulingContext<RenderFunction>> = [];
-        var pendingUpdateFunctions: Array<SchedulingContext<UpdateFunction>> = [];
-        var pendingRenderFunctions: Array<SchedulingContext<RenderFunction>> = [];
+        constructor(updateInterval: Milliseconds) {
+            this._elapsedTime = 0
+            this._updateInterval = updateInterval
+            this._lastRenderTime = (new Date()).getTime()
 
-        return {
-            run: function() {
-                const updateIntervalFraction = elapsedTime / updateInterval;
-                renderFunctions = renderFunctions.filter((context) => {
-                    context.item(elapsedTime, updateIntervalFraction);
-                    return context.removalPredicate();
-                }).concat(pendingRenderFunctions);
-                pendingRenderFunctions = [];
+            this._renderStream = new BaseStream()
+            this._updateStream = new BaseStream()
+        }
+
+        renderStream(): Stream<RenderContext> {
+            return this._renderStream
+        }
+
+        updateStream(): Stream<UpdateContext> {
+            return this._updateStream
+        }
+
+        run(): void {
+            const updateIntervalFraction = this._elapsedTime / this._updateInterval
+
+            this._renderStream.push({
+                elapsedTime: this._elapsedTime,
+                t: updateIntervalFraction
+            })
+            
+            const currentTime: number = (new Date()).getTime()
+            this._elapsedTime += currentTime - this._lastRenderTime
+            this._lastRenderTime = currentTime
+            
+            while (this._elapsedTime >= this._updateInterval) {
+                this._updateStream.push({
+                    updateInterval: this._updateInterval
+                })
                 
-                const currentTime: number = (new Date()).getTime();
-                elapsedTime += currentTime - timeOflastRender;
-                timeOflastRender = currentTime;
-                
-                while (elapsedTime >= updateInterval) {
-                    updateFunctions = updateFunctions.filter((context) => {
-                        context.item(updateInterval);
-                        return context.removalPredicate();
-                    }).concat(pendingUpdateFunctions);
-                    pendingUpdateFunctions = [];
-                    
-                    elapsedTime -= updateInterval;
-                }
-            },
-            reset: function() {
-                timeOflastRender = (new Date()).getTime();
-            },
-            scheduleUpdateFunction: function(func: UpdateFunction, removalPredicate: () => boolean) {
-                pendingUpdateFunctions.push({
-                    item: func,
-                    removalPredicate: removalPredicate
-                });
-            },
-            scheduleRenderFunction: function(func: RenderFunction, removalPredicate: () => boolean) {
-                pendingRenderFunctions.push({
-                    item: func,
-                    removalPredicate: removalPredicate
-                });
-            },
-            removeAllUpdateFunctions: function() {
-                updateFunctions = [];
-            },
-            removeAllRenderFunctions: function() {
-                renderFunctions = [];
+                this._elapsedTime -= this._updateInterval
             }
         }
-    }
 
-    export function repeat(times: number): () => boolean {
-        var totalTimes = times;
-        return function() {
-            totalTimes--;
-            return totalTimes > 0;
+        reset() {
+            this._lastRenderTime = (new Date()).getTime()
         }
-    }
-
-    export function forever(): boolean {
-        return true;
     }
 }

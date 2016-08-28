@@ -4,7 +4,6 @@ module client {
 
     import gs = gerpsquirrel;
     import v2 = gerpsquirrel.vector2;
-    import ev = gerpsquirrel.event;
     import render = gerpsquirrel.render;
     import region = gerpsquirrel.region;
     import dynamics = gerpsquirrel.dynamics;
@@ -15,6 +14,8 @@ module client {
     import QuadTree = gerpsquirrel.quadtree.QuadTree;
     import MouseInput = gerpsquirrel.input.MouseInput;
     import MouseEventType = gerpsquirrel.input.MouseEventType;
+    import RunLoop = gerpsquirrel.runloop.RunLoop;
+
     import sharedProfiler = gerpsquirrel.profile.sharedProfiler;
 
     interface ThingRenderInfo {
@@ -50,7 +51,7 @@ module client {
     }
 
     var _runLoopHandle: number = null;
-    var _renderLoop: gs.RunLoop = null;
+    var _renderLoop: RunLoop = null;
     export function toggleSimulation() {
         if (_runLoopHandle != null)
         {
@@ -60,18 +61,18 @@ module client {
         else
         {
             _renderLoop.reset();
-            _runLoopHandle = setInterval(_renderLoop.run, 1000 / 60);
+            _runLoopHandle = setInterval(() => _renderLoop.run(), 1000 / 60);
         }
     }
 
     export function init(element: HTMLCanvasElement) {
         const context = element.getContext('2d');
-        const renderLoop = gs.RunLoopMake(1000 / 30);
+        const renderLoop = new RunLoop(1000 / 30);
         const screenBoundsRegion = region.BoxMake([0, 0], [element.width, element.height]);
 
-        renderLoop.scheduleRenderFunction((_) => {
+        renderLoop.renderStream().handle((_) => {
             context.clearRect(0, 0, element.width, element.height);
-        }, gs.forever);
+        });
 
         function renderProfileResults(results: gerpsquirrel.profile.Profile, x: number, y: number) {
             context.font = "10px sans-serif";
@@ -104,13 +105,13 @@ module client {
 
             context.fillRect(info.center[0] - 2, info.center[1] - 2, 4, 4);
         });
-        renderLoop.scheduleRenderFunction((elapsedTime, t) => {
+        renderLoop.renderStream().handle((renderContext) => {
 
             sharedProfiler().begin("render.things");
-            thingRenderer.run(elapsedTime, t);
+            thingRenderer.run(renderContext.elapsedTime, renderContext.t);
             sharedProfiler().end("render.things");
 
-        }, gs.forever);
+        });
 
         var things: Array<Thing> = [];
         for (var i = 0; i < 400; ++i) {
@@ -171,7 +172,7 @@ module client {
         var totalThingCenter: Vector2;
         var totalThingHalfSize: Vector2;
         var updateStepProfileResults = null;
-        renderLoop.scheduleUpdateFunction((timestep) => {
+        renderLoop.updateStream().handle((_) => {
             sharedProfiler().begin("everything");
             sharedProfiler().begin("simulation.integration");
 
@@ -268,9 +269,9 @@ module client {
             updateStepProfileResults = sharedProfiler().results();
             sharedProfiler().clear();
 
-        }, gs.forever);
+        });
 
-        renderLoop.scheduleRenderFunction((_) => {
+        renderLoop.renderStream().handle((_) => {
             if (dragging) {
                 const startOfDrag = draggedThing.hull.actor.fromLocalSpace(startDragOffset);
                 context.strokeStyle = "#000000";
@@ -326,7 +327,7 @@ module client {
             if (updateStepProfileResults) {
                 renderProfileResults(updateStepProfileResults, 0, 20);
             }
-        }, gs.forever);
+        });
 
         _renderLoop = renderLoop;
         toggleSimulation();
