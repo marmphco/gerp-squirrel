@@ -2,7 +2,7 @@
 
 module samplestream {
 
-    import BaseStream = gerpsquirrel.event.BaseStream;
+    import BaseStream = gerpsquirrel.stream.BaseStream;
 
     export function init() {
         const testData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];

@@ -1,11 +1,11 @@
-/// <reference path="../core/event.ts" />
+/// <reference path="../core/stream.ts" />
 /// <reference path="../math/vector.ts" />
 
 module gerpsquirrel.input {
 
     import Vector2 = vector2.Vector2;
-    import Stream = event.Stream;
-    import BaseStream = event.BaseStream;
+    import Stream = stream.Stream;
+    import BaseStream = stream.BaseStream;
 
     export enum MouseEventType {
         Up, Down, Click, Move
@@ -17,8 +17,8 @@ module gerpsquirrel.input {
     }
 
     export class MouseInput {
-        _element: Element;
-        _stream: BaseStream<MouseInfo>;
+        private _element: Element;
+        private _stream: BaseStream<MouseInfo>;
 
         constructor() {
             this._element = null;

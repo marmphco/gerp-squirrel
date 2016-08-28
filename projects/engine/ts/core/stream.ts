@@ -1,4 +1,4 @@
-module gerpsquirrel.event {
+module gerpsquirrel.stream {
 
     export type HandlerID = number;
 
