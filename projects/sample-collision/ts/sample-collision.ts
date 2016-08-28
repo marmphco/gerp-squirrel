@@ -1,6 +1,6 @@
 /// <reference path="../../engine/build/dts/gerp-squirrel.d.ts" />
 
-module client {
+module samplecollision {
 
     import gs = gerpsquirrel;
     import v2 = gerpsquirrel.vector2;

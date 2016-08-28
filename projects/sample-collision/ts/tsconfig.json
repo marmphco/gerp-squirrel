@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
         "sourceMap": false,
-        "outFile": "client.js"
+        "outFile": "sample-collision.js"
     }
 }

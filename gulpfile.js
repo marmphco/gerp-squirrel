@@ -4,8 +4,8 @@ var del = require('del');
 var merge = require('merge2');
 
 var TEST_CLIENTS = [
-    'client',
-    'sample-stream'
+    'sample-collision',
+    'sample-stream',
 ]
 
 gulp.task('default', ['client']);
