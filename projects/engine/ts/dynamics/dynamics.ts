@@ -89,7 +89,7 @@ module gerpsquirrel.dynamics {
         }
 
         projectedOn(axis: Vector2): [Vector2, Vector2, Vector2] {
-            var projectedSpan: Vector2 = [Number.MAX_VALUE, Number.MIN_VALUE];
+            var projectedSpan: Vector2 = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
             var minVertex: Vector2 = [0, 0];
             var maxVertex: Vector2 = [0, 0];
 

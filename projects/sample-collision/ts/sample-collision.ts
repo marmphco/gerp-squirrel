@@ -28,10 +28,8 @@ module samplecollision {
     class Thing implements render.Renderable<ThingRenderInfo> {
         hull: dynamics.ConvexHull;
 
-        constructor(width: number, height: number, mass: number = 1) {
-            this.hull = new dynamics.ConvexHull([
-                [0, 0], [width, 0], [width, height], [0, height]
-            ]);
+        constructor(vertices: Vector2[], mass: number = 1) {
+            this.hull = new dynamics.ConvexHull(vertices);
             this.hull.actor.mass = mass;
             this.hull.actor.momentOfInertia = dynamics.convexMomentOfInertia(this.hull);
         }
@@ -44,8 +42,19 @@ module samplecollision {
         }
     }
 
+    function makeRectThing(width: number, height: number, mass: number = 1): Thing {
+        return new Thing([ [0, 0], [width, 0], [width, height], [0, height] ], mass)
+    }
+
     function makeRandomThing(bounds: Vector2): Thing {
-        const thing: Thing = new Thing(Math.random() * 16 + 4, Math.random() * 16 + 4);
+        var vertices: Vector2[] = [];
+        for (var i = 0; i < 3; i++) {
+            const angle = Math.PI * 2 / 3 * i;
+            const radius = Math.random() * 50 + 50
+            vertices.push([Math.cos(angle) * radius, Math.sin(angle) * radius]);
+        }
+        const thing: Thing = new Thing(vertices);
+        //const thing: Thing = makeRectThing(Math.random() * 16 + 4, Math.random() * 16 + 4);
         thing.hull.actor.setCenter([Math.random()*bounds[0], Math.random()*bounds[1]]);
         return thing;
     }
@@ -123,10 +132,10 @@ module samplecollision {
         })
 
         const walls: Array<Thing> = [
-            new Thing(1000, 1000, 999999),
-            new Thing(1000, 1000, 999999),
-            new Thing(1000, 1000, 999999),
-            new Thing(1000, 1000, 999999),
+            makeRectThing(1000, 1000, 999999),
+            makeRectThing(1000, 1000, 999999),
+            makeRectThing(1000, 1000, 999999),
+            makeRectThing(1000, 1000, 999999),
         ];
         walls[0].hull.actor.setCenter([element.width / 2, -500]);
         walls[1].hull.actor.setCenter([element.width + 500, element.height / 2]);
@@ -201,11 +210,11 @@ module samplecollision {
             var maxY = Number.MIN_VALUE;
 
             things.forEach((thing) => {
-                const center = thing.hull.actor.center();
-                minX = Math.min(minX, center[0]);
-                maxX = Math.max(maxX, center[0]);
-                minY = Math.min(minY, center[1]);
-                maxY = Math.max(maxY, center[1]);
+                const worldBounds = thing.hull.worldBounds();
+                minX = Math.min(minX, worldBounds.center[0] - worldBounds.halfSize[0]);
+                maxX = Math.max(maxX, worldBounds.center[0] + worldBounds.halfSize[0]);
+                minY = Math.min(minY, worldBounds.center[1] - worldBounds.halfSize[1]);
+                maxY = Math.max(maxY, worldBounds.center[1] + worldBounds.halfSize[1]);
             });
 
             totalThingCenter = [(maxX + minX) / 2, (maxY + minY) / 2];
