@@ -43,5 +43,13 @@ module samplestream {
 
         testData.forEach((x) => stream.push(x))
         stream.removeHandler(windowID)
+
+        // Combine
+        const combineID = stream.combine(stream).handle((x) => {
+            console.log("combine " + x.toString())
+        });
+
+        testData.forEach((x) => stream.push(x))
+        stream.removeHandler(combineID)
     }
 }
