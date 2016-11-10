@@ -59,9 +59,9 @@ module gerpsquirrel.stream {
 
             return (item: T) => {
                 window.push(item)
+                handler(window)
                 if (window.length == n) {
-                    handler(window)
-                    window.shift();
+                    window.shift()
                 }
             }
         })
