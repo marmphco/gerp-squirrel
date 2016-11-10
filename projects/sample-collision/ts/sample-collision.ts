@@ -48,9 +48,9 @@ module samplecollision {
 
     function makeRandomThing(bounds: Vector2): Thing {
         var vertices: Vector2[] = [];
-        for (var i = 0; i < 3; i++) {
-            const angle = Math.PI * 2 / 3 * i;
-            const radius = Math.random() * 50 + 50
+        for (var i = 0; i < 4; i++) {
+            const angle = Math.PI * 2 / 4 * i;
+            const radius = Math.random() * 10 + 10
             vertices.push([Math.cos(angle) * radius, Math.sin(angle) * radius]);
         }
         const thing: Thing = new Thing(vertices);
@@ -123,7 +123,7 @@ module samplecollision {
         });
 
         var things: Array<Thing> = [];
-        for (var i = 0; i < 400; ++i) {
+        for (var i = 0; i < 200; ++i) {
             things.push(makeRandomThing([element.width, element.height]));
         }
 
