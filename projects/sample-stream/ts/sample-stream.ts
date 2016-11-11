@@ -8,6 +8,15 @@ module samplestream {
         const testData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         const stream = new BaseStream<number>()
 
+        // Combine
+        const combinedStream = stream.combine(stream);
+        const combineID = combinedStream.handle((x) => {
+            console.log("combine " + x.toString())
+        });
+
+        testData.forEach((x) => stream.push(x))
+        combinedStream.removeHandler(combineID)
+
         // Map
         const mapID = stream
             .map((x) => x.toString() + "-" + x.toString())
@@ -43,13 +52,5 @@ module samplestream {
 
         testData.forEach((x) => stream.push(x))
         stream.removeHandler(windowID)
-
-        // Combine
-        const combineID = stream.combine(stream).handle((x) => {
-            console.log("combine " + x.toString())
-        });
-
-        testData.forEach((x) => stream.push(x))
-        stream.removeHandler(combineID)
     }
 }
