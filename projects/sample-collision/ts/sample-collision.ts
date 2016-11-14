@@ -1,4 +1,4 @@
-/// <reference path="../../engine/build/dts/gerp-squirrel.d.ts" />
+/// <reference path="../../engine/build/gerp-squirrel.d.ts" />
 
 module samplecollision {
 
