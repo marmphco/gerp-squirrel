@@ -1,23 +1,15 @@
-TSC = tsc --project
+NAME = gerp-squirrel
+BUILD_DIR = build
+TS = $(shell find ts | grep \\.ts)
+JS = $(BUILD_DIR)/$(NAME).js
+DTS = $(BUILD_DIR)/$(NAME).d.ts
+PRODUCTS = $(JS) $(DTS)
 
-all: engine sample-collision sample-stream
+engine: $(PRODUCTS)
 
-clean: clean-engine clean-sample-collision clean-sample-collision
+$(PRODUCTS): $(TS)
+	tsc --project ts --outFile $(JS)
 
-engine:
-	$(MAKE) -C projects/engine
-
-clean-engine: 
-	$(MAKE) -C projects/engine clean
-
-sample-collision: engine
-	$(MAKE) -C projects/sample-collision
-
-clean-sample-collision:
-	$(MAKE) -C projects/sample-collision clean
-
-sample-stream: engine
-	$(MAKE) -C projects/sample-stream
-
-clean-sample-stream:
-	$(MAKE) -C projects/sample-stream clean
+clean:
+	- rm $(BUILD_DIR)/*
+	- rmdir $(BUILD_DIR)
