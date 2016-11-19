@@ -83,7 +83,7 @@ module gerpsquirrel.dynamics {
                     minY = Math.min(minY, vertex[1]);
                     maxY = Math.max(maxY, vertex[1]);
                 });
-                this._cachedBounds = new Box([(maxX + minX) / 2, (maxY + minY) / 2], [(maxX - minX) / 2, (maxY - minY) / 2]);
+                this._cachedBounds = new Box([minX, minY], [maxX - minX, maxY - minY]);
             }
             return this._cachedBounds;
         }

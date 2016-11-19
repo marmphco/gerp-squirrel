@@ -7,25 +7,37 @@ module gerpsquirrel.box {
     import Vector2 = vector2.Vector2;
 
     export class Box {
-        center: Vector2;
-        halfSize: Vector2;
+        origin: Vector2;
+        size: Vector2;
 
-        constructor(center: Vector2, halfSize: Vector2) {
-            this.center = center;
-            this.halfSize = halfSize;
+        static withBounds(bounds: [Vector2, Vector2]): Box {
+            return new Box(bounds[0], v2.subtract(bounds[1], bounds[0]))
+        }
+
+        static withCenterandHalfSize(center: Vector2, halfSize: Vector2): Box {
+            return new Box(v2.subtract(center, halfSize), v2.scale(halfSize, 2))
+        }
+
+        constructor(origin: Vector2, size: Vector2) {
+            this.origin = origin;
+            this.size = size;
+        }
+
+        center(): Vector2 {
+            return v2.add(this.origin, v2.scale(this.size, 0.5))
         }
 
         containsPoint(point: Vector2): boolean {
-            if (point[0] < this.center[0] - this.halfSize[0]) {
+            if (point[0] < this.origin[0]) {
                 return false;
             }
-            if (point[1] < this.center[1] - this.halfSize[1]) {
+            if (point[1] < this.origin[1]) {
                 return false;
             }
-            if (point[0] > this.center[0] + this.halfSize[0]) {
+            if (point[0] > this.origin[0] + this.size[0]) {
                 return false;
             }
-            if (point[1] > this.center[1] + this.halfSize[1]) {
+            if (point[1] > this.origin[1] + this.size[1]) {
                 return false;
             }
 
@@ -33,26 +45,20 @@ module gerpsquirrel.box {
         }
 
         intersects(box: Box): boolean {
-            if (box.center[0] + box.halfSize[0] < this.center[0] - this.halfSize[0]) {
+            if (box.origin[0] + box.size[0] < this.origin[0]) {
                 return false;
             }
-            if (box.center[1] + box.halfSize[1] < this.center[1] - this.halfSize[1]) {
+            if (box.origin[1] + box.size[1] < this.origin[1]) {
                 return false;
             }
-            if (box.center[0] - box.halfSize[0] > this.center[0] + this.halfSize[0]) {
+            if (box.origin[0] > this.origin[0] + this.size[0]) {
                 return false;
             }
-            if (box.center[1] - box.halfSize[1] > this.center[1] + this.halfSize[1]) {
+            if (box.origin[1] > this.origin[1] + this.size[1]) {
                 return false;
             }
 
             return true;
         }
-    }
-
-    export function boxWithBounds(bounds: [Vector2, Vector2]): Box {
-        const center = v2.scale(v2.add(bounds[0], bounds[1]), 0.5);
-        const halfSize = v2.scale(v2.subtract(bounds[1], bounds[0]), 0.5);
-        return new Box(center, halfSize);
     }
 }

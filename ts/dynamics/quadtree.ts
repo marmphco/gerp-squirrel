@@ -52,17 +52,17 @@ module gerpsquirrel.quadtree {
             if (this._items.length > this._capacity || this._children.length > 0) {
                 if (this._children.length == 0) {
                     // create child nodes
-                    const quarterSize = v2.scale(this._bounds.halfSize, 0.5);
-                    const leftCenter = this._bounds.center[0] - quarterSize[0];
-                    const rightCenter = this._bounds.center[0] + quarterSize[0];
-                    const topCenter = this._bounds.center[1] - quarterSize[1];
-                    const bottomCenter = this._bounds.center[1] + quarterSize[1];
+                    const halfSize = v2.scale(this._bounds.size, 0.5);
+                    const leftOrigin = this._bounds.origin[0];
+                    const rightOrigin = this._bounds.origin[0] + halfSize[0];
+                    const topOrigin = this._bounds.origin[1];
+                    const bottomOrigin = this._bounds.origin[1] + halfSize[1];
 
                     this._children = [
-                        new QuadTree<Type>(new Box([leftCenter, topCenter], quarterSize), this._capacity),
-                        new QuadTree<Type>(new Box([rightCenter, topCenter], quarterSize), this._capacity),
-                        new QuadTree<Type>(new Box([rightCenter, bottomCenter], quarterSize), this._capacity),
-                        new QuadTree<Type>(new Box([leftCenter, bottomCenter], quarterSize), this._capacity),
+                        new QuadTree<Type>(new Box([leftOrigin, topOrigin], halfSize), this._capacity),
+                        new QuadTree<Type>(new Box([rightOrigin, topOrigin], halfSize), this._capacity),
+                        new QuadTree<Type>(new Box([rightOrigin, bottomOrigin], halfSize), this._capacity),
+                        new QuadTree<Type>(new Box([leftOrigin, bottomOrigin], halfSize), this._capacity),
                     ];
                 }
 
