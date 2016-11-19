@@ -11,8 +11,8 @@ module gerpsquirrel.constraint {
     import Vector2 = v2.Vector2;
 
     export function constrainToRegion(actor: Actor, r: Region) {
-        if (!r.containsVector(actor.center())) {
-        	const newPosition = r.nearestBoundaryVectorToVector(actor.center());
+        if (!r.contains(actor.center())) {
+        	const newPosition = r.nearestBoundaryPointTo(actor.center());
         	const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center()));
         	actor.setCenter(newPosition);
         	actor.setVelocity(v2.subtract(actor.velocity(), v2.scale(v2.project(actor.velocity(), moveVector), 2)));
@@ -20,8 +20,8 @@ module gerpsquirrel.constraint {
     }
 
     export function constrainToRegionComplement(actor: Actor, r: Region) {
-    	if (r.containsVector(actor.center())) {
-            const newPosition = r.nearestBoundaryVectorToVector(actor.center());
+    	if (r.contains(actor.center())) {
+            const newPosition = r.nearestBoundaryPointTo(actor.center());
             const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center()));
             actor.setCenter(newPosition);
             actor.setVelocity(v2.subtract(actor.velocity(), v2.scale(v2.project(actor.velocity(), moveVector), 2)));
@@ -29,7 +29,7 @@ module gerpsquirrel.constraint {
     }
 
     export function constrainToBoundary(actor: Actor, r: Region) {
-    	const newPosition = r.nearestBoundaryVectorToVector(actor.center());
+    	const newPosition = r.nearestBoundaryPointTo(actor.center());
     	const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center()));
     	actor.setCenter(newPosition);
     	actor.setVelocity(v2.subtract(actor.velocity(), v2.scale(v2.project(actor.velocity(), moveVector), 2)));

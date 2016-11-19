@@ -7,44 +7,40 @@ module gerpsquirrel.region {
     import Vector2 = v2.Vector2;
 
     export interface Region {
-        containsVector(u: Vector2): boolean;
-        nearestBoundaryVectorToVector(u: Vector2): Vector2;
+        contains(point: Vector2): boolean;
+        nearestBoundaryPointTo(point: Vector2): Vector2;
     }
 
     export interface DistanceField extends Region {
-        distanceAtVector: (u: Vector2) => number;
+        distanceAt: (point: Vector2) => number;
         boundaryPath(stepSize: number, error: number): Array<Vector2>;
     }
 
-    export function DistanceFieldMake(distanceFunction: (u: Vector2) => number): DistanceField {
-        return new _DistanceField(distanceFunction);
-    }
+    export class BasicDistanceField implements DistanceField {
 
-    class _DistanceField implements DistanceField {
-
-        distanceAtVector: (u: Vector2) => number;
+        distanceAt: (point: Vector2) => number;
 
         constructor(distanceFunction: (u: Vector2) => number) {
-            this.distanceAtVector = distanceFunction;
+            this.distanceAt = distanceFunction;
         }
 
-        gradientAtVector(u: Vector2): Vector2 {
+        gradientAt(point: Vector2): Vector2 {
             return [
-                this.distanceAtVector([u[0] + 0.5, u[1]]) - this.distanceAtVector([u[0] - 0.5, u[1]]),
-                this.distanceAtVector([u[0], u[1] + 0.5]) - this.distanceAtVector([u[0], u[1] - 0.5])
+                this.distanceAt([point[0] + 0.5, point[1]]) - this.distanceAt([point[0] - 0.5, point[1]]),
+                this.distanceAt([point[0], point[1] + 0.5]) - this.distanceAt([point[0], point[1] - 0.5])
             ];
         }
 
-        containsVector(u: Vector2): boolean {
-            return this.distanceAtVector(u) < 0;
+        contains(point: Vector2): boolean {
+            return this.distanceAt(point) < 0;
         }
 
-        nearestBoundaryVectorToVector(u: Vector2, steps: number = 2): Vector2 {
+        nearestBoundaryPointTo(point: Vector2, steps: number = 2): Vector2 {
             // Ah yeah janky gradient descent
-            var v: Vector2 = [u[0], u[1]];
+            var v: Vector2 = [point[0], point[1]];
             for (var i = 0; i < steps; i++) {
-                const distance = this.distanceAtVector(v);
-                const gradient = this.gradientAtVector(v);
+                const distance = this.distanceAt(v);
+                const gradient = this.gradientAt(v);
                 v = v2.add(v, v2.scale(gradient, -distance));
             }
 
@@ -52,20 +48,20 @@ module gerpsquirrel.region {
         }
 
         boundaryPath(stepSize: number, error: number): Array<Vector2> {
-            const origin = this.nearestBoundaryVectorToVector([0, 0]);
-            var v: Vector2 = v2.add(origin, v2.scale(v2.counterClockwiseOrthogonal(this.gradientAtVector(origin)), stepSize));
+            const origin = this.nearestBoundaryPointTo([0, 0]);
+            var v: Vector2 = v2.add(origin, v2.scale(v2.counterClockwiseOrthogonal(this.gradientAt(origin)), stepSize));
 
             var points: Array<Vector2> = [];
 
             // walk around the boundary, counter-clockwise
             var count = 0;
             while (v2.length(v2.subtract(origin, v)) > stepSize * 0.5 && count < 1000) {
-                if (this.distanceAtVector(v) > error) {
-                    v = this.nearestBoundaryVectorToVector(v);
+                if (this.distanceAt(v) > error) {
+                    v = this.nearestBoundaryPointTo(v);
                 }
                 else {
                     points.push(v)
-                    v = v2.add(v, v2.scale(v2.counterClockwiseOrthogonal(this.gradientAtVector(v)), stepSize));
+                    v = v2.add(v, v2.scale(v2.counterClockwiseOrthogonal(this.gradientAt(v)), stepSize));
                     count++;
                 }
             }
@@ -75,44 +71,35 @@ module gerpsquirrel.region {
     }
 
     export function inverse(r: DistanceField): DistanceField {
-        return DistanceFieldMake((u: Vector2) => {
-            return -r.distanceAtVector(u);
+        return new BasicDistanceField((u: Vector2) => {
+            return -r.distanceAt(u);
         });
     }
 
     export function union(...fields: Array<DistanceField>): DistanceField {
-        return DistanceFieldMake((u: Vector2) => {
+        return new BasicDistanceField((u: Vector2) => {
             return Math.min.apply(null, fields.map((field) => {
-                return field.distanceAtVector(u);
+                return field.distanceAt(u);
             }));
         });
     }
 
     export function intersection(...fields: Array<DistanceField>): DistanceField {
-        return DistanceFieldMake((u: Vector2) => {
+        return new BasicDistanceField((u: Vector2) => {
             return Math.max.apply(null, fields.map((field) => {
-                return field.distanceAtVector(u);
+                return field.distanceAt(u);
             }));
         });
     }
 
     export function repeat(field: DistanceField, origin: Vector2, size: Vector2): DistanceField {
-        return DistanceFieldMake((u: Vector2) => {
+        return new BasicDistanceField((u: Vector2) => {
             const v: Vector2 = v2.add([u[0] % size[0], u[1] % size[1]], origin);
-            return field.distanceAtVector(v);
+            return field.distanceAt(v);
         });
     }
 
-    export interface Circle extends DistanceField {
-        center: Vector2;
-        radius: number;
-    }
-
-    export function CircleMake(center: Vector2, radius: number): Circle {
-        return new _Circle(center, radius);
-    }
-
-    class _Circle extends _DistanceField implements Circle {
+    export class Circle extends BasicDistanceField {
         center: Vector2;
         radius: number;
 
@@ -126,16 +113,7 @@ module gerpsquirrel.region {
         }
     }
 
-    export interface Box extends DistanceField {
-        origin: Vector2;
-        size: Vector2;
-    }
-
-    export function BoxMake(origin: Vector2, size: Vector2): Box {
-        return new _Box(origin, size);
-    }
-
-    class _Box extends _DistanceField implements Box {
+    export class Box extends BasicDistanceField {
         origin: Vector2;
         size: Vector2;
 
