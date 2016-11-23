@@ -11,12 +11,7 @@ module gerpsquirrel.region {
         nearestBoundaryPointTo(point: Vector2): Vector2;
     }
 
-    export interface DistanceField extends Region {
-        distanceAt: (point: Vector2) => number;
-        boundaryPath(stepSize: number, error: number): Array<Vector2>;
-    }
-
-    export class BasicDistanceField implements DistanceField {
+    export class DistanceField implements Region {
 
         distanceAt: (point: Vector2) => number;
 
@@ -68,16 +63,23 @@ module gerpsquirrel.region {
 
             return points;
         }
-    }
 
-    export function inverse(r: DistanceField): DistanceField {
-        return new BasicDistanceField((u: Vector2) => {
-            return -r.distanceAt(u);
-        });
+        inverse(): DistanceField {
+            return new DistanceField((u: Vector2) => {
+                return -this.distanceAt(u);
+            });
+        }
+
+        repeat(origin: Vector2, size: Vector2): DistanceField {
+            return new DistanceField((u: Vector2) => {
+                const v: Vector2 = v2.add([u[0] % size[0], u[1] % size[1]], origin);
+                return this.distanceAt(v);
+            });
+        }
     }
 
     export function union(...fields: Array<DistanceField>): DistanceField {
-        return new BasicDistanceField((u: Vector2) => {
+        return new DistanceField((u: Vector2) => {
             return Math.min.apply(null, fields.map((field) => {
                 return field.distanceAt(u);
             }));
@@ -85,27 +87,20 @@ module gerpsquirrel.region {
     }
 
     export function intersection(...fields: Array<DistanceField>): DistanceField {
-        return new BasicDistanceField((u: Vector2) => {
+        return new DistanceField((u: Vector2) => {
             return Math.max.apply(null, fields.map((field) => {
                 return field.distanceAt(u);
             }));
         });
     }
 
-    export function repeat(field: DistanceField, origin: Vector2, size: Vector2): DistanceField {
-        return new BasicDistanceField((u: Vector2) => {
-            const v: Vector2 = v2.add([u[0] % size[0], u[1] % size[1]], origin);
-            return field.distanceAt(v);
-        });
-    }
-
-    export class Circle extends BasicDistanceField {
+    export class Circle extends DistanceField {
         center: Vector2;
         radius: number;
 
         constructor(center: Vector2, radius: number) {
             super((u: Vector2) => {
-                return v2.length(v2.subtract(u, center)) - radius;
+                return v2.length(v2.subtract(u, this.center)) - this.radius;
             });
 
             this.center = center;
@@ -113,14 +108,14 @@ module gerpsquirrel.region {
         }
     }
 
-    export class Box extends BasicDistanceField {
+    export class Box extends DistanceField {
         origin: Vector2;
         size: Vector2;
 
         constructor(origin: Vector2, size: Vector2) {
             super((u: Vector2) => {
-                const halfSize = v2.scale(size, 0.5);
-                const transformed = v2.subtract(u, v2.add(origin, halfSize));
+                const halfSize = v2.scale(this.size, 0.5);
+                const transformed = v2.subtract(u, v2.add(this.origin, halfSize));
                 const absolute: Vector2 = [Math.abs(transformed[0]), Math.abs(transformed[1])];
                 const distance = v2.subtract(absolute, halfSize);
 
