@@ -122,4 +122,14 @@ module gerpsquirrel.vector2 {
     export function counterClockwiseOrthogonal(u: Vector2): Vector2 {
         return [-u[1], u[0]];
     }
+
+    export function rotate(u: Vector2, radians: number): Vector2 {
+        const sin = Math.sin(radians);
+        const cos = Math.cos(radians);
+        const rotated: Vector2 = [
+            cos * u[0] + sin * u[1],
+            -sin * u[0] + cos * u[1],
+        ];
+        return rotated;
+    }
 }
