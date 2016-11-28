@@ -95,22 +95,11 @@ module gerpsquirrel.dynamics {
 
         toLocalSpace(u: Vector2): Vector2 {
             const translated = v2.subtract(u, this._center);
-            const sin = Math.sin(-this._orientation);
-            const cos = Math.cos(-this._orientation);
-            const rotated: Vector2 = [
-                cos * translated[0] + sin * translated[1],
-                -sin * translated[0] + cos * translated[1],
-            ];
-            return rotated;
+            return v2.rotate(translated, -this._orientation)
         }
 
         fromLocalSpace(u: Vector2): Vector2 {
-            const sin = Math.sin(this._orientation);
-            const cos = Math.cos(this._orientation);
-            const rotated: Vector2 = [
-                cos * u[0] + sin * u[1],
-                -sin * u[0] + cos * u[1],
-            ];
+            const rotated = v2.rotate(u, this._orientation)
             return v2.add(this._center, rotated);
         }
 
