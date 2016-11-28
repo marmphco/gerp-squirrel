@@ -186,10 +186,10 @@ module gerpsquirrel.collision {
                 const edgeNormal = v2.normalize(v2.counterClockwiseOrthogonal(edge));
 
                 const projectionInfo = hull.projectedOn(edgeNormal);
-                const projected = projectionInfo[0];
+                const projected = projectionInfo.span;
 
                 const otherProjectionInfo = otherHull.projectedOn(edgeNormal);
-                const otherProjected = otherProjectionInfo[0];
+                const otherProjected = otherProjectionInfo.span;
 
                 if (projected[0] >= otherProjected[1] || projected[1] <= otherProjected[0]) {
                     return null;
@@ -201,8 +201,8 @@ module gerpsquirrel.collision {
                 if (depthA < depthB) {
                     if (depthA < minimumDepthCollision.depth) {
                         const positions: [Vector2, Vector2] = [
-                            otherProjectionInfo[2], 
-                            v2.add(otherProjectionInfo[2], v2.scale(edgeNormal, -depthA))
+                            otherProjectionInfo.maxPoint, 
+                            v2.add(otherProjectionInfo.maxPoint, v2.scale(edgeNormal, -depthA))
                         ];
                         minimumDepthCollision = new CollisionInfo(positions, depthA);
                     }
@@ -210,8 +210,8 @@ module gerpsquirrel.collision {
                 else {
                     if (depthB < minimumDepthCollision.depth) {
                         const positions: [Vector2, Vector2] = [
-                            otherProjectionInfo[1],
-                            v2.add(otherProjectionInfo[1], v2.scale(edgeNormal, depthB))
+                            otherProjectionInfo.minPoint,
+                            v2.add(otherProjectionInfo.minPoint, v2.scale(edgeNormal, depthB))
                         ];
                         minimumDepthCollision = new CollisionInfo(positions, depthB);
                     }

@@ -1,9 +1,15 @@
-/// <reference path="../math/vector.ts" />
+/// <reference path="./vector.ts" />
 
 module gerpsquirrel.polygon {
 
     import v2 = vector2;
     import Vector2 = vector2.Vector2;
+
+    export interface ProjectionInfo {
+        span: Vector2
+        minPoint: Vector2
+        maxPoint: Vector2
+    }
 
     export class ConvexPolygon {
         vertices: Vector2[]
@@ -40,6 +46,31 @@ module gerpsquirrel.polygon {
             }
 
             return v2.scale(total, 1 / (this.vertices.length - 2));
+        }
+
+        projectedOn(axis: Vector2): ProjectionInfo {
+            var projectedSpan: Vector2 = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+            var minVertex: Vector2 = [0, 0];
+            var maxVertex: Vector2 = [0, 0];
+
+            this.vertices.forEach((vertex) => {
+                const projectedVertex = v2.projectedLength(vertex, axis);
+
+                if (projectedVertex < projectedSpan[0]) {
+                    projectedSpan[0] = projectedVertex;
+                    minVertex = vertex;
+                }
+                if (projectedVertex > projectedSpan[1]) {
+                    projectedSpan[1] = projectedVertex;
+                    maxVertex = vertex;
+                }
+            });
+
+            return {
+                span: projectedSpan,
+                minPoint: minVertex,
+                maxPoint: maxVertex
+            }
         }
     }
 

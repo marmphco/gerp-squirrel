@@ -91,25 +91,16 @@ module gerpsquirrel.dynamics {
             return this._cachedBounds;
         }
 
-        projectedOn(axis: Vector2): [Vector2, Vector2, Vector2] {
-            var projectedSpan: Vector2 = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-            var minVertex: Vector2 = [0, 0];
-            var maxVertex: Vector2 = [0, 0];
+        projectedOn(axis: Vector2): polygon.ProjectionInfo {
+            const localAxis = v2.rotate(axis, -this.actor.orientation())
+            const localProjected = this.polygon.projectedOn(localAxis)
+            const offset = v2.projectedLength(this.actor.center(), axis)
 
-            this.worldVertices().forEach((vertex) => {
-                const projectedVertex = v2.projectedLength(vertex, axis);
-
-                if (projectedVertex < projectedSpan[0]) {
-                    projectedSpan[0] = projectedVertex;
-                    minVertex = vertex;
-                }
-                if (projectedVertex > projectedSpan[1]) {
-                    projectedSpan[1] = projectedVertex;
-                    maxVertex = vertex;
-                }
-            });
-
-            return [projectedSpan, minVertex, maxVertex];
+            return {
+                span:[localProjected.span[0] + offset, localProjected.span[1] + offset],
+                minPoint:this.actor.fromLocalSpace(localProjected.minPoint),
+                maxPoint:this.actor.fromLocalSpace(localProjected.maxPoint),
+            }
         }
 
         contains(point: Vector2): boolean {
