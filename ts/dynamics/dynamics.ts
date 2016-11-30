@@ -11,7 +11,7 @@ module gerpsquirrel.dynamics {
     import ConvexPolygon = polygon.ConvexPolygon;
     import Vector2 = vector2.Vector2;
 
-    export class ConvexHull {
+    export class ConvexBody {
         actor: Actor;
         polygon: ConvexPolygon;
 
@@ -126,7 +126,7 @@ module gerpsquirrel.dynamics {
     }
 
     // assumes that the center of mass is [0, 0]
-    export function convexMomentOfInertia(hull: ConvexHull): number {
+    export function convexMomentOfInertia(hull: ConvexBody): number {
         var totalMoment: number = 0;
         var totalArea: number = 0;
 

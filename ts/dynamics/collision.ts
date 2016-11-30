@@ -7,7 +7,7 @@ module gerpsquirrel.collision {
     import v2 = gerpsquirrel.vector2;
 
     import Actor = dynamics.Actor;
-    import ConvexHull = dynamics.ConvexHull;
+    import ConvexBody = dynamics.ConvexBody;
     import Vector2 = v2.Vector2;
 
     export class CollisionInfo {
@@ -55,10 +55,6 @@ module gerpsquirrel.collision {
                 v2.dot(u, this.toLocalSpace([0, 1]))
             ];
         }
-    }
-
-    export interface CollisionResponder {
-        (info: CollisionInfo, actor1: Actor, actor2: Actor): void;
     }
 
     export function resolveCollisionLinear(actor1: Actor, actor2: Actor, info: CollisionInfo) {
@@ -172,9 +168,9 @@ module gerpsquirrel.collision {
     }
 
     // TODO define NO_COLLISION instead of returning null. 
-    export function hullIntersection(hull0: ConvexHull, hull1: ConvexHull): CollisionInfo {
+    export function hullIntersection(hull0: ConvexBody, hull1: ConvexBody): CollisionInfo {
 
-        const checkProjectionAxes = function(hull: ConvexHull, otherHull: ConvexHull): CollisionInfo {
+        const checkProjectionAxes = function(hull: ConvexBody, otherHull: ConvexBody): CollisionInfo {
             var minimumDepthCollision: CollisionInfo = new CollisionInfo();
 
             const vertices = hull.worldVertices();
