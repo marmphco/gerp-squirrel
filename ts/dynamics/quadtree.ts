@@ -34,22 +34,27 @@ module gerpsquirrel.quadtree {
         private _children: Array<QuadTree<Type>>;
         private _items: Array<Item<Type>>;
 
-        // TODO needs depth limit to save the stack
         private _capacity: number;
+        private _depthLimit: number;
 
-        constructor(bounds: Box, capacity: number) {
+        constructor(bounds: Box, capacity: number, depthLimit: number) {
+            if (depthLimit < 1)
+                throw "QuadTree must have a depthLimit greater than 0";
+
             this._bounds = bounds;
             this._children = [];
             this._items = [];
             this._capacity = capacity;
+            this._depthLimit = depthLimit - 1;             
         }
 
         insert(item: Item<Type>) {
             this._items.push(item);
 
+            // this._depthLimit < 1 => don't redistribute
             // this._items.length > this._capacity => redistribute if over capacity
             // this._children.length > 0 => redistribute since items must only be placed in leaf nodes
-            if (this._items.length > this._capacity || this._children.length > 0) {
+            if (this._depthLimit > 0 && (this._items.length > this._capacity || this._children.length > 0)) {
                 if (this._children.length == 0) {
                     // create child nodes
                     const halfSize = v2.scale(this._bounds.size, 0.5);
@@ -59,10 +64,18 @@ module gerpsquirrel.quadtree {
                     const bottomOrigin = this._bounds.origin[1] + halfSize[1];
 
                     this._children = [
-                        new QuadTree<Type>(new Box([leftOrigin, topOrigin], halfSize), this._capacity),
-                        new QuadTree<Type>(new Box([rightOrigin, topOrigin], halfSize), this._capacity),
-                        new QuadTree<Type>(new Box([rightOrigin, bottomOrigin], halfSize), this._capacity),
-                        new QuadTree<Type>(new Box([leftOrigin, bottomOrigin], halfSize), this._capacity),
+                        new QuadTree<Type>(new Box([leftOrigin, topOrigin], halfSize),
+                                           this._capacity,
+                                           this._depthLimit),
+                        new QuadTree<Type>(new Box([rightOrigin, topOrigin], halfSize),
+                                           this._capacity,
+                                           this._depthLimit),
+                        new QuadTree<Type>(new Box([rightOrigin, bottomOrigin], halfSize),
+                                           this._capacity,
+                                           this._depthLimit),
+                        new QuadTree<Type>(new Box([leftOrigin, bottomOrigin], halfSize),
+                                           this._capacity,
+                                           this._depthLimit),
                     ];
                 }
 
