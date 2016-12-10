@@ -73,9 +73,11 @@ module gerpsquirrel.collision {
         // project out of collision
         const axis = info.axis();
 
-        // TODO this 0.5 needs to be weighted by mass also
-        actor1.setCenter(v2.add(actor1.center(), v2.scale(axis, 0.5)));
-        actor2.setCenter(v2.add(actor2.center(), v2.scale(axis, -0.5)));
+        const totalMass = actor1.mass + actor2.mass;
+        const weight1 = actor2.mass / totalMass;
+        const weight2 = actor1.mass / totalMass;
+        actor1.setCenter(v2.add(actor1.center(), v2.scale(axis, weight1)));
+        actor2.setCenter(v2.add(actor2.center(), v2.scale(axis, -weight2)));
 
         // apply impulses
         actor1.applyImpulse(info.positions[0], impulse1);
@@ -113,9 +115,11 @@ module gerpsquirrel.collision {
 
         // project out of collision
 
-        // TODO this 0.5 needs to be weighted by mass also
-        actor1.setCenter(v2.add(actor1.center(), v2.scale(axis, 0.5)));
-        actor2.setCenter(v2.add(actor2.center(), v2.scale(axis, -0.5)));
+        const totalMass = actor1.mass + actor2.mass;
+        const weight1 = actor2.mass / totalMass;
+        const weight2 = actor1.mass / totalMass;
+        actor1.setCenter(v2.add(actor1.center(), v2.scale(axis, weight1)));
+        actor2.setCenter(v2.add(actor2.center(), v2.scale(axis, -weight2)));
 
         // apply impulses
         actor1.applyImpulse(info.positions[0], impulse1);
@@ -124,8 +128,6 @@ module gerpsquirrel.collision {
         if (isNaN(actor1.energy() + actor2.energy() - energyBefore)) {
             debugger;
         }
-
-        //console.log("energyDelta", actor1.energy() + actor2.energy() - energyBefore);
     }
 
     // resolveCollision with fixedActor.mass => infinity
@@ -157,8 +159,6 @@ module gerpsquirrel.collision {
 
         // apply impulses
         actor.applyImpulse(info.positions[1], impulse2);
-
-        //console.log("energyDelta", fixedActor.energy() + actor.energy() - energyBefore);
     }
 
     export function inaccurateResolve(actor1: Actor, actor2: Actor, info: CollisionInfo) {
