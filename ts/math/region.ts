@@ -70,6 +70,7 @@ module gerpsquirrel.region {
             });
         }
 
+        // move this out into its own class Repeater
         repeat(origin: Vector2, size: Vector2): DistanceField {
             return new DistanceField((u: Vector2) => {
                 const v: Vector2 = v2.add([u[0] % size[0], u[1] % size[1]], origin);
@@ -91,6 +92,12 @@ module gerpsquirrel.region {
             return Math.max.apply(null, fields.map((field) => {
                 return field.distanceAt(u);
             }));
+        });
+    }
+
+    export function subtract(minuend: DistanceField, subtrahend: DistanceField): DistanceField {
+        return new DistanceField((u: Vector2) => {
+            return Math.max(minuend.distanceAt(u), -subtrahend.distanceAt(u));
         });
     }
 
