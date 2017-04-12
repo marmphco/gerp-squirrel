@@ -18,11 +18,11 @@ module gerpsquirrel.dynamics {
         // For caching TODO rename these
         private _center: Vector2;
         private _orientation: number;
-        private _cachedWorldVertices: Array<Vector2>;
+        private _cachedWorldVertices: Array<Vector2> | null;
 
         private _boundsCenter: Vector2;
         private _boundsOrientation: number;
-        private _cachedBounds: Box;
+        private _cachedBounds: Box | null;
 
         constructor(vertices: Array<Vector2>) {
             this.actor = new Actor(1, 1);

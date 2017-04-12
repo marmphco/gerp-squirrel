@@ -50,7 +50,7 @@ module gerpsquirrel.profile {
             for (var path in this._results) {
                 const result = this._results[path];
                 const pathComponents = path.split(".");
-                const lastPathComponent = pathComponents.pop();
+                const lastPathComponent = pathComponents.pop()!;
 
                 // strange way to traverse down a dictionary
                 var leaf = pathComponents.reduce((leaf, pathComponent) => {

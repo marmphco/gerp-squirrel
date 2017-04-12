@@ -168,9 +168,9 @@ module gerpsquirrel.collision {
     }
 
     // TODO define NO_COLLISION instead of returning null. 
-    export function hullIntersection(hull0: ConvexBody, hull1: ConvexBody): CollisionInfo {
+    export function hullIntersection(hull0: ConvexBody, hull1: ConvexBody): CollisionInfo | null {
 
-        const checkProjectionAxes = function(hull: ConvexBody, otherHull: ConvexBody): CollisionInfo {
+        const checkProjectionAxes = function(hull: ConvexBody, otherHull: ConvexBody): CollisionInfo | null {
             var minimumDepthCollision: CollisionInfo = new CollisionInfo();
 
             const vertices = hull.worldVertices();

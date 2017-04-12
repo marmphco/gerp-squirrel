@@ -20,20 +20,17 @@ module gerpsquirrel.input {
         private _element: Element;
         private _stream: BaseStream<MouseInfo>;
 
-        constructor() {
-            this._element = null;
-            this._stream = new BaseStream();
-        }
-
-        attachToElement(element: Element): void {
+        constructor(element: Element) {
             this._element = element;
             element.addEventListener("mousedown", this._downListener);
             element.addEventListener("mouseup", this._upListener);
             element.addEventListener("click", this._clickListener);
             element.addEventListener("mousemove", this._moveListener);
+
+            this._stream = new BaseStream();
         }
 
-        detachFromElement(): void {
+        detach(): void {
             this._element.removeEventListener("mousedown", this._downListener);
             this._element.removeEventListener("mouseup", this._upListener);
             this._element.removeEventListener("click", this._clickListener);
