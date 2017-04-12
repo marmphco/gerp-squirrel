@@ -116,13 +116,12 @@ module gerpsquirrel.region {
     }
 
     export class Box extends DistanceField {
-        origin: Vector2;
-        size: Vector2;
+        box: box.Box
 
-        constructor(origin: Vector2, size: Vector2) {
+        constructor(box: box.Box) {
             super((u: Vector2) => {
-                const halfSize = v2.scale(this.size, 0.5);
-                const transformed = v2.subtract(u, v2.add(this.origin, halfSize));
+                const halfSize = v2.scale(this.box.size, 0.5);
+                const transformed = v2.subtract(u, v2.add(this.box.origin, halfSize));
                 const absolute: Vector2 = [Math.abs(transformed[0]), Math.abs(transformed[1])];
                 const distance = v2.subtract(absolute, halfSize);
 
@@ -131,8 +130,7 @@ module gerpsquirrel.region {
                 return greatestNegativeOrZero + v2.length(positiveDistances);
             });
 
-            this.origin = origin;
-            this.size = size;
+            this.box = box
         }
     }
 }
