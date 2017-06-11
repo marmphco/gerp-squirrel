@@ -37,11 +37,11 @@ module gerpsquirrel.runloop {
             this._updateStream = new BaseStream()
         }
 
-        renderStream(): Stream<RenderContext> {
+        get renderStream(): Stream<RenderContext> {
             return this._renderStream
         }
 
-        updateStream(): Stream<UpdateContext> {
+        get updateStream(): Stream<UpdateContext> {
             return this._updateStream
         }
 

@@ -21,20 +21,20 @@ module gerpsquirrel.collision {
             this.depth = depth;
         }
 
-        isTrivial(): boolean {
+        get isTrivial(): boolean {
             return this.depth < 0.001;
         }
 
-        axis(): Vector2 {
+        get axis(): Vector2 {
             return v2.subtract(this.positions[0], this.positions[1]);
         }
 
-        normal(): Vector2 {
-            return v2.normalize(this.axis());
+        get normal(): Vector2 {
+            return v2.normalize(this.axis);
         }
 
-        tangent(): Vector2 {
-            return v2.clockwiseOrthogonal(this.normal());
+        get tangent(): Vector2 {
+            return v2.clockwiseOrthogonal(this.normal);
         }
 
         reverse(): CollisionInfo {
@@ -44,8 +44,8 @@ module gerpsquirrel.collision {
 
         toLocalSpace(u: Vector2): Vector2 {
             return [
-                v2.dot(u, this.tangent()),
-                v2.dot(u, this.normal())
+                v2.dot(u, this.tangent),
+                v2.dot(u, this.normal)
             ];
         }
 
@@ -67,17 +67,17 @@ module gerpsquirrel.collision {
         const impulseMagnitude1 = 2 * actor2.mass * (localVelocity2[1] - localVelocity1[1]) / (actor1.mass + actor2.mass);
         const impulseMagnitude2 = 2 * actor1.mass * (localVelocity1[1] - localVelocity2[1]) / (actor1.mass + actor2.mass);
 
-        const impulse1 = v2.scale(info.normal(), impulseMagnitude1);
-        const impulse2 = v2.scale(info.normal(), impulseMagnitude2);
+        const impulse1 = v2.scale(info.normal, impulseMagnitude1);
+        const impulse2 = v2.scale(info.normal, impulseMagnitude2);
 
         // project out of collision
-        const axis = info.axis();
+        const axis = info.axis;
 
         const totalMass = actor1.mass + actor2.mass;
         const weight1 = actor2.mass / totalMass;
         const weight2 = actor1.mass / totalMass;
-        actor1.setCenter(v2.add(actor1.center(), v2.scale(axis, weight1)));
-        actor2.setCenter(v2.add(actor2.center(), v2.scale(axis, -weight2)));
+        actor1.center = v2.add(actor1.center, v2.scale(axis, weight1));
+        actor2.center = v2.add(actor2.center, v2.scale(axis, -weight2));
 
         // apply impulses
         actor1.applyImpulse(info.positions[0], impulse1);
@@ -85,10 +85,10 @@ module gerpsquirrel.collision {
     }
 
     export function resolveCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
-        const energyBefore = actor1.energy() + actor2.energy();
+        const energyBefore = actor1.energy + actor2.energy;
 
-        const axis = info.axis();
-        const normal = info.normal();
+        const axis = info.axis;
+        const normal = info.normal;
 
         // TODO these positions may be inaccurate after projection phase...
         const localVelocity1 = info.toLocalSpace(actor1.velocityAt(info.positions[0]));
@@ -96,8 +96,8 @@ module gerpsquirrel.collision {
 
         const relativeVelocity = v2.subtract(localVelocity1, localVelocity2);
 
-        const r1 = v2.subtract(info.positions[0], actor1.center());
-        const r2 = v2.subtract(info.positions[1], actor2.center());
+        const r1 = v2.subtract(info.positions[0], actor1.center);
+        const r2 = v2.subtract(info.positions[1], actor2.center);
 
         const massFunction = (1 / actor1.mass + 1 / actor2.mass)
                            + (1 / actor1.momentOfInertia * v2.lengthSquared(r1)) 
@@ -118,24 +118,24 @@ module gerpsquirrel.collision {
         const totalMass = actor1.mass + actor2.mass;
         const weight1 = actor2.mass / totalMass;
         const weight2 = actor1.mass / totalMass;
-        actor1.setCenter(v2.add(actor1.center(), v2.scale(axis, weight1)));
-        actor2.setCenter(v2.add(actor2.center(), v2.scale(axis, -weight2)));
+        actor1.center = v2.add(actor1.center, v2.scale(axis, weight1));
+        actor2.center = v2.add(actor2.center, v2.scale(axis, -weight2));
 
         // apply impulses
         actor1.applyImpulse(info.positions[0], impulse1);
         actor2.applyImpulse(info.positions[1], impulse2);
 
-        if (isNaN(actor1.energy() + actor2.energy() - energyBefore)) {
+        if (isNaN(actor1.energy + actor2.energy - energyBefore)) {
             debugger;
         }
     }
 
     // resolveCollision with fixedActor.mass => infinity
     export function resolveCollisionFixed(fixedActor: Actor, actor: Actor, info: CollisionInfo) {
-        const energyBefore = fixedActor.energy() + actor.energy();
+        const energyBefore = fixedActor.energy + actor.energy;
 
-        const axis = info.axis();
-        const normal = info.normal();
+        const axis = info.axis;
+        const normal = info.normal;
 
         // TODO these positions may be inaccurate after projection phase...
         const localVelocity1 = info.toLocalSpace(fixedActor.velocityAt(info.positions[0]));
@@ -143,8 +143,8 @@ module gerpsquirrel.collision {
 
         const relativeVelocity = v2.subtract(localVelocity1, localVelocity2);
 
-        const r1 = v2.subtract(info.positions[0], fixedActor.center());
-        const r2 = v2.subtract(info.positions[1], actor.center());
+        const r1 = v2.subtract(info.positions[0], fixedActor.center);
+        const r2 = v2.subtract(info.positions[1], actor.center);
 
         const massFunction = (1 / actor.mass)
             + (1 / actor.momentOfInertia * v2.lengthSquared(r2))
@@ -155,16 +155,16 @@ module gerpsquirrel.collision {
         const impulse2 = v2.scale(normal, impulseMagnitude2);
 
         // project out of collision
-        actor.setCenter(v2.add(actor.center(), v2.scale(axis, -1.0)));
+        actor.center = v2.add(actor.center, v2.scale(axis, -1.0));
 
         // apply impulses
         actor.applyImpulse(info.positions[1], impulse2);
     }
 
     export function inaccurateResolve(actor1: Actor, actor2: Actor, info: CollisionInfo) {
-        const axis = info.axis();
-        actor1._center = v2.add(actor1.center(), v2.scale(axis, 0.5));
-        actor2._center = v2.add(actor2.center(), v2.scale(axis, -0.5));
+        const axis = info.axis;
+        actor1._center = v2.add(actor1.center, v2.scale(axis, 0.5));
+        actor2._center = v2.add(actor2.center, v2.scale(axis, -0.5));
     }
 
     // TODO define NO_COLLISION instead of returning null. 
@@ -214,7 +214,7 @@ module gerpsquirrel.collision {
                 }
             }
 
-            if (minimumDepthCollision.isTrivial()) {
+            if (minimumDepthCollision.isTrivial) {
                 return null;
             }
 

@@ -32,63 +32,63 @@ module gerpsquirrel.dynamics {
 
         // Getters and Setters
 
-        center(): Vector2 {
+        get center(): Vector2 {
             return this._center;
         }
 
         centerInterpolated(t: number): Vector2 {
-            return v2.add(this._center, v2.scale(this.velocity(), t));
+            return v2.add(this._center, v2.scale(this.velocity, t));
         }
 
-        setCenter(center: Vector2) {
-            var velocity = this.velocity();
+        set center(center: Vector2) {
+            var velocity = this.velocity;
             this._center = center;
-            this.setVelocity(velocity);
+            this.velocity = velocity;
         }
 
-        velocity(): Vector2 {
+        get velocity(): Vector2 {
             return v2.subtract(this._center, this._previousCenter);
         }
 
         // point is in world space
         velocityAt(point: Vector2): Vector2 {
             const fromCenter = v2.subtract(point, this._center);
-            return v2.add(this.velocity(), v2.scale(v2.clockwiseOrthogonal(fromCenter), this.angularVelocity()));
+            return v2.add(this.velocity, v2.scale(v2.clockwiseOrthogonal(fromCenter), this.angularVelocity));
         }
 
-        setVelocity(velocity: Vector2) {
+        set velocity(velocity: Vector2) {
             this._previousCenter = v2.subtract(this._center, velocity);
         }
 
-        orientation(): number {
+        get orientation(): number {
             return this._orientation;
         }
 
-        setOrientation(orientation: number) {
-            var angularVelocity = this.angularVelocity();
+        set orientation(orientation: number) {
+            var angularVelocity = this.angularVelocity;
             this._orientation = orientation;
-            this.setAngularVelocity(angularVelocity);
+            this.angularVelocity = angularVelocity;
         }
 
-        angularVelocity(): number {
+        get angularVelocity(): number {
             return this._orientation - this._previousOrientation;
         }
 
-        setAngularVelocity(angularVelocity: number) {
+        set angularVelocity(angularVelocity: number) {
             this._previousOrientation = this._orientation - angularVelocity;
         }
 
-        linearEnergy(): number {
-            return 0.5 * this.mass * v2.lengthSquared(this.velocity());
+        get linearEnergy(): number {
+            return 0.5 * this.mass * v2.lengthSquared(this.velocity);
         }
 
-        angularEnergy(): number {
-            const angularVelocity = this.angularVelocity();
+        get angularEnergy(): number {
+            const angularVelocity = this.angularVelocity;
             return 0.5 * this.momentOfInertia * angularVelocity * angularVelocity;
         }
 
-        energy(): number {
-            return this.linearEnergy() + this.angularEnergy();
+        get energy(): number {
+            return this.linearEnergy + this.angularEnergy;
         }
 
         // Converting to/from Local Space
@@ -104,7 +104,7 @@ module gerpsquirrel.dynamics {
         }
 
         fromLocalSpaceInterpolated(u: Vector2, t: number): Vector2 {
-            const adjustedOrientation = this._orientation + this.angularVelocity() * t;
+            const adjustedOrientation = this._orientation + this.angularVelocity * t;
             const sin = Math.sin(adjustedOrientation);
             const cos = Math.cos(adjustedOrientation);
             const rotated: Vector2 = [
@@ -142,8 +142,8 @@ module gerpsquirrel.dynamics {
             const fromCenter = v2.subtract(from, this._center);
             const angularImpulse = v2.crossLength(impulse, fromCenter);
 
-            this.setVelocity(v2.add(this.velocity(), v2.scale(impulse, 1.0 / this.mass)));
-            this.setAngularVelocity(this.angularVelocity() + angularImpulse / this.momentOfInertia);
+            this.velocity = v2.add(this.velocity, v2.scale(impulse, 1.0 / this.mass));
+            this.angularVelocity = this.angularVelocity + angularImpulse / this.momentOfInertia;
         }
     }
 }

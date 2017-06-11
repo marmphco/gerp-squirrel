@@ -1,6 +1,7 @@
 /// <reference path="../math/vector.ts" />
 /// <reference path="../math/region.ts" />
-/// <reference path="../dynamics/dynamics.ts" />
+/// <reference path="actor.ts" />
+/// <reference path="dynamics.ts" />
 
 module gerpsquirrel.constraint {
 
@@ -11,28 +12,28 @@ module gerpsquirrel.constraint {
     import Vector2 = v2.Vector2;
 
     export function constrainToRegion(actor: Actor, r: Region) {
-        if (!r.contains(actor.center())) {
-        	const newPosition = r.nearestBoundaryPointTo(actor.center());
-        	const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center()));
-        	actor.setCenter(newPosition);
-        	actor.setVelocity(v2.subtract(actor.velocity(), v2.scale(v2.project(actor.velocity(), moveVector), 2)));
+        if (!r.contains(actor.center)) {
+        	const newPosition = r.nearestBoundaryPointTo(actor.center);
+        	const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center));
+        	actor.center = newPosition;
+        	actor.velocity = v2.subtract(actor.velocity, v2.scale(v2.project(actor.velocity, moveVector), 2));
         }
     }
 
     export function constrainToRegionComplement(actor: Actor, r: Region) {
-    	if (r.contains(actor.center())) {
-            const newPosition = r.nearestBoundaryPointTo(actor.center());
-            const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center()));
-            actor.setCenter(newPosition);
-            actor.setVelocity(v2.subtract(actor.velocity(), v2.scale(v2.project(actor.velocity(), moveVector), 2)));
+    	if (r.contains(actor.center)) {
+            const newPosition = r.nearestBoundaryPointTo(actor.center);
+            const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center));
+            actor.center = newPosition;
+            actor.velocity = v2.subtract(actor.velocity, v2.scale(v2.project(actor.velocity, moveVector), 2));
         }
     }
 
     export function constrainToBoundary(actor: Actor, r: Region) {
-    	const newPosition = r.nearestBoundaryPointTo(actor.center());
-    	const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center()));
-    	actor.setCenter(newPosition);
-    	actor.setVelocity(v2.subtract(actor.velocity(), v2.scale(v2.project(actor.velocity(), moveVector), 2)));
+    	const newPosition = r.nearestBoundaryPointTo(actor.center);
+    	const moveVector: Vector2 = v2.normalize(v2.subtract(newPosition, actor.center));
+    	actor.center = newPosition;
+    	actor.velocity = v2.subtract(actor.velocity, v2.scale(v2.project(actor.velocity, moveVector), 2));
     }
 
 }

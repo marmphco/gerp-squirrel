@@ -1,4 +1,4 @@
-/// <reference path="../dynamics/actor.ts" />
+/// <reference path="actor.ts" />
 /// <reference path="../math/vector.ts" />
 /// <reference path="../math/box.ts" />
 /// <reference path="../math/polygon.ts" />
@@ -34,12 +34,12 @@ module gerpsquirrel.dynamics {
             this.polygon.vertices = vertices.map((vertex) => v2.subtract(vertex, centerOfMass));
 
             // Set up caching properties
-            this._center = this.actor.center();
-            this._orientation = this.actor.orientation();
+            this._center = this.actor.center;
+            this._orientation = this.actor.orientation;
             this._cachedWorldVertices = null;
 
-            this._boundsCenter = this.actor.center();
-            this._boundsOrientation = this.actor.orientation();
+            this._boundsCenter = this.actor.center;
+            this._boundsOrientation = this.actor.orientation;
             this._cachedBounds = null;
         }
 
@@ -49,12 +49,12 @@ module gerpsquirrel.dynamics {
 
         worldVertices() {
             if (!this._cachedWorldVertices
-                || this._center[0] != this.actor.center()[0]
-                || this._center[1] != this.actor.center()[1]
-                || this._orientation != this.actor.orientation()) {
+                || this._center[0] != this.actor.center[0]
+                || this._center[1] != this.actor.center[1]
+                || this._orientation != this.actor.orientation) {
 
-                this._center = this.actor.center();
-                this._orientation = this.actor.orientation();
+                this._center = this.actor.center;
+                this._orientation = this.actor.orientation;
                 this._cachedWorldVertices = this.polygon.vertices.map((vertex) => this.actor.fromLocalSpace(vertex));
             }
                
@@ -68,12 +68,12 @@ module gerpsquirrel.dynamics {
 
         worldBounds() {
             if (!this._cachedBounds
-                || this._boundsCenter[0] != this.actor.center()[0]
-                || this._boundsCenter[1] != this.actor.center()[1]
-                || this._boundsOrientation != this.actor.orientation()) {
+                || this._boundsCenter[0] != this.actor.center[0]
+                || this._boundsCenter[1] != this.actor.center[1]
+                || this._boundsOrientation != this.actor.orientation) {
 
-                this._boundsCenter = this.actor.center();
-                this._boundsOrientation = this.actor.orientation();
+                this._boundsCenter = this.actor.center;
+                this._boundsOrientation = this.actor.orientation;
 
                 var minX = Number.MAX_VALUE;
                 var maxX = Number.MIN_VALUE;
@@ -92,9 +92,9 @@ module gerpsquirrel.dynamics {
         }
 
         projectedOn(axis: Vector2): polygon.ProjectionInfo {
-            const localAxis = v2.rotate(axis, -this.actor.orientation())
+            const localAxis = v2.rotate(axis, -this.actor.orientation)
             const localProjected = this.polygon.projectedOn(localAxis)
-            const offset = v2.projectedLength(this.actor.center(), axis)
+            const offset = v2.projectedLength(this.actor.center, axis)
 
             return {
                 span:[localProjected.span[0] + offset, localProjected.span[1] + offset],
