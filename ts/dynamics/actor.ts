@@ -41,6 +41,10 @@ module gerpsquirrel.dynamics {
         }
 
         set center(center: Vector2) {
+            this.setCenter(center);
+        }
+
+        protected setCenter(center: Vector2) {
             var velocity = this.velocity;
             this._center = center;
             this.velocity = velocity;
@@ -65,6 +69,10 @@ module gerpsquirrel.dynamics {
         }
 
         set orientation(orientation: number) {
+            this.setOrientation(orientation);
+        }
+
+        protected setOrientation(orientation: number) {
             var angularVelocity = this.angularVelocity;
             this._orientation = orientation;
             this.angularVelocity = angularVelocity;
