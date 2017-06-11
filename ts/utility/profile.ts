@@ -1,16 +1,14 @@
 module gerpsquirrel.profile {
 
-    export interface _Profile {
-        [key: string]: _Profile | number;
+    export interface Profile {
+        [key: string]: Profile | number;
     };
-
-    export type Profile = _Profile | {};
 
     var _sharedProfile: Profiler;
 
     export function sharedProfiler(): Profiler {
         if (!_sharedProfile) {
-             _sharedProfile = new Profiler()
+            _sharedProfile = new Profiler()
         }
         return _sharedProfile;
     }
@@ -54,10 +52,15 @@ module gerpsquirrel.profile {
 
                 // strange way to traverse down a dictionary
                 var leaf = pathComponents.reduce((leaf, pathComponent) => {
-                    if (!(pathComponent in leaf)) {
-                        leaf[pathComponent] = {};
+                    const child: Profile | number = leaf[pathComponent];
+                    if (!(pathComponent in leaf) || typeof child == "number") {
+                        const obj = {};
+                        leaf[pathComponent] = obj;
+                        return obj;
                     }
-                    return leaf[pathComponent];
+                    else {
+                        return child;
+                    }
                 }, profile);
                 leaf[lastPathComponent] = result;
             }
