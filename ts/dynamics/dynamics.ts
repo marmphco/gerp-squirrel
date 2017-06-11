@@ -16,15 +16,8 @@ module gerpsquirrel.dynamics {
     export class ConvexBody extends Actor {
         polygon: ConvexPolygon;
 
-        // For caching TODO rename these
-        // private _center: Vector2;
-        // private _orientation: number;
-        // private _cachedWorldVertices: Array<Vector2> | null;
         private _worldVertices: Lazy<Vector2[]>;
 
-        // private _boundsCenter: Vector2;
-        // private _boundsOrientation: number;
-        // private _cachedBounds: Box | null;
         private _bounds: Lazy<Box>;
 
         constructor(vertices: Array<Vector2>) {
@@ -36,14 +29,6 @@ module gerpsquirrel.dynamics {
 
             this.polygon.vertices = vertices.map((vertex) => v2.subtract(vertex, centerOfMass));
 
-            // Set up caching properties
-            // this._center = this.actor.center;
-            // this._orientation = this.actor.orientation;
-            // this._cachedWorldVertices = null;
-
-            // this._boundsCenter = this.actor.center;
-            // this._boundsOrientation = this.actor.orientation;
-            // this._cachedBounds = null;
             this._worldVertices = new Lazy(() => {
                 return this.polygon.vertices.map((vertex) => this.fromLocalSpace(vertex));
             })
@@ -68,12 +53,21 @@ module gerpsquirrel.dynamics {
             return this.polygon.vertices;
         }
 
+        // override
+        advance(timestep: number) {
+            super.advance(timestep)
+            this._worldVertices.markDirty();
+            this._bounds.markDirty();
+        }
+
+        // override
         setCenter(center: Vector2) {
             super.setCenter(center);
             this._worldVertices.markDirty();
             this._bounds.markDirty();
         }
 
+        // override
         setOrientation(orientation: number) {
             super.setOrientation(orientation);
             this._worldVertices.markDirty();
@@ -81,17 +75,6 @@ module gerpsquirrel.dynamics {
         }
 
         worldVertices() {
-            // if (!this._cachedWorldVertices
-            //     || this._center[0] != this.actor.center[0]
-            //     || this._center[1] != this.actor.center[1]
-            //     || this._orientation != this.actor.orientation) {
-
-            //     this._center = this.actor.center;
-            //     this._orientation = this.actor.orientation;
-            //     this._cachedWorldVertices = this.polygon.vertices.map((vertex) => this.actor.fromLocalSpace(vertex));
-            // }
-               
-            // return this._cachedWorldVertices;
             return this._worldVertices.value;
         }
 
@@ -101,28 +84,6 @@ module gerpsquirrel.dynamics {
         }
 
         worldBounds() {
-            // if (!this._cachedBounds
-            //     || this._boundsCenter[0] != this.actor.center[0]
-            //     || this._boundsCenter[1] != this.actor.center[1]
-            //     || this._boundsOrientation != this.actor.orientation) {
-
-            //     this._boundsCenter = this.actor.center;
-            //     this._boundsOrientation = this.actor.orientation;
-
-            //     var minX = Number.MAX_VALUE;
-            //     var maxX = Number.MIN_VALUE;
-            //     var minY = Number.MAX_VALUE;
-            //     var maxY = Number.MIN_VALUE;
-
-            //     this.worldVertices().forEach((vertex) => {
-            //         minX = Math.min(minX, vertex[0]);
-            //         maxX = Math.max(maxX, vertex[0]);
-            //         minY = Math.min(minY, vertex[1]);
-            //         maxY = Math.max(maxY, vertex[1]);
-            //     });
-            //     this._cachedBounds = new Box([minX, minY], [maxX - minX, maxY - minY]);
-            // }
-            // return this._cachedBounds;
             return this._bounds.value;
         }
 
