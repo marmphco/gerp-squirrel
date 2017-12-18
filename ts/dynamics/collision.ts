@@ -62,8 +62,6 @@ module gerpsquirrel.collision {
         const localVelocity1 = info.toLocalSpace(actor1.velocityAt(info.positions[0]));
         const localVelocity2 = info.toLocalSpace(actor2.velocityAt(info.positions[1]));
 
-        const relativeVelocity = v2.subtract(localVelocity1, localVelocity2);
-
         const impulseMagnitude1 = 2 * actor2.mass * (localVelocity2[1] - localVelocity1[1]) / (actor1.mass + actor2.mass);
         const impulseMagnitude2 = 2 * actor1.mass * (localVelocity1[1] - localVelocity2[1]) / (actor1.mass + actor2.mass);
 
@@ -87,34 +85,9 @@ module gerpsquirrel.collision {
     export function resolveCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
         const energyBefore = actor1.energy + actor2.energy;
 
-        const axis = info.axis;
-        const normal = info.normal;
-
-        // TODO these positions may be inaccurate after projection phase...
-        const localVelocity1 = info.toLocalSpace(actor1.velocityAt(info.positions[0]));
-        const localVelocity2 = info.toLocalSpace(actor2.velocityAt(info.positions[1]));
-
-        const relativeVelocity = v2.subtract(localVelocity1, localVelocity2);
-
-        const r1 = v2.subtract(info.positions[0], actor1.center);
-        const r2 = v2.subtract(info.positions[1], actor2.center);
-
-        const massFunction = (1 / actor1.mass + 1 / actor2.mass)
-                           + (1 / actor1.momentOfInertia * v2.lengthSquared(r1)) 
-                           + (1 / actor2.momentOfInertia * v2.lengthSquared(r2)) 
-                           - (1 / actor1.momentOfInertia * v2.dot(r1, normal) * v2.projectedLength(r1, normal)) 
-                           - (1 / actor2.momentOfInertia * v2.dot(r2, normal) * v2.projectedLength(r2, normal));
-
-        const restitution = 1.0;
-
-        const impulseMagnitude1 = (restitution + 1) * (localVelocity2[1] - localVelocity1[1]) / massFunction;
-        const impulseMagnitude2 = (restitution + 1) * (localVelocity1[1] - localVelocity2[1]) / massFunction;
-
-        const impulse1 = v2.scale(normal, impulseMagnitude1);
-        const impulse2 = v2.scale(normal, impulseMagnitude2);
-
         // project out of collision
 
+        const axis = info.axis;
         const totalMass = actor1.mass + actor2.mass;
         const weight1 = actor2.mass / totalMass;
         const weight2 = actor1.mass / totalMass;
@@ -122,6 +95,27 @@ module gerpsquirrel.collision {
         actor2.center = v2.add(actor2.center, v2.scale(axis, -weight2));
 
         // apply impulses
+
+        const impactPoint = v2.add(info.positions[0], v2.scale(axis, weight1));
+        const r1 = v2.subtract(impactPoint, actor1.center);
+        const r2 = v2.subtract(impactPoint, actor2.center);
+
+        const normal = info.normal;
+        const massFunction = (1 / actor1.mass + 1 / actor2.mass) * v2.dot(normal, normal)
+                           + (1 / actor1.momentOfInertia) * (v2.lengthSquared(r1) - v2.dot(r1, normal) * v2.dot(r1, normal)) 
+                           + (1 / actor2.momentOfInertia) * (v2.lengthSquared(r2) - v2.dot(r2, normal) * v2.dot(r2, normal)) 
+
+        const restitution = 1.0;
+        const impulseMagnitude1 = (restitution + 1) 
+                                * (v2.dot(actor2.velocity, normal) 
+                                   - v2.dot(actor1.velocity, normal) 
+                                   + actor2.angularVelocity * v2.crossLength(normal, r2) 
+                                   - actor1.angularVelocity * v2.crossLength(normal, r1)) 
+                                / massFunction;
+
+        const impulse1 = v2.scale(normal, impulseMagnitude1);
+        const impulse2 = v2.scale(impulse1, -1);
+
         actor1.applyImpulse(info.positions[0], impulse1);
         actor2.applyImpulse(info.positions[1], impulse2);
 
@@ -141,14 +135,12 @@ module gerpsquirrel.collision {
         const localVelocity1 = info.toLocalSpace(fixedActor.velocityAt(info.positions[0]));
         const localVelocity2 = info.toLocalSpace(actor.velocityAt(info.positions[1]));
 
-        const relativeVelocity = v2.subtract(localVelocity1, localVelocity2);
-
         const r1 = v2.subtract(info.positions[0], fixedActor.center);
         const r2 = v2.subtract(info.positions[1], actor.center);
 
         const massFunction = (1 / actor.mass)
             + (1 / actor.momentOfInertia * v2.lengthSquared(r2))
-            - (1 / actor.momentOfInertia * v2.dot(r2, normal) * v2.projectedLength(r2, normal));
+            - (1 / actor.momentOfInertia * v2.dot(r2, normal) * v2.dot(r2, normal));
 
         const restitution = 1.0;
         const impulseMagnitude2 = (restitution + 1) * (localVelocity1[1] - localVelocity2[1]) / massFunction;
