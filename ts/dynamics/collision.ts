@@ -83,10 +83,8 @@ module gerpsquirrel.collision {
     }
 
     export function resolveCollision(actor1: Actor, actor2: Actor, info: CollisionInfo) {
-        const energyBefore = actor1.energy + actor2.energy;
 
         // project out of collision
-
         const axis = info.axis;
         const totalMass = actor1.mass + actor2.mass;
         const weight1 = actor2.mass / totalMass;
@@ -95,7 +93,6 @@ module gerpsquirrel.collision {
         actor2.center = v2.add(actor2.center, v2.scale(axis, -weight2));
 
         // apply impulses
-
         const impactPoint = v2.add(info.positions[0], v2.scale(axis, weight1));
         const r1 = v2.subtract(impactPoint, actor1.center);
         const r2 = v2.subtract(impactPoint, actor2.center);
@@ -105,7 +102,7 @@ module gerpsquirrel.collision {
                            + (1 / actor1.momentOfInertia) * (v2.lengthSquared(r1) - v2.dot(r1, normal) * v2.dot(r1, normal)) 
                            + (1 / actor2.momentOfInertia) * (v2.lengthSquared(r2) - v2.dot(r2, normal) * v2.dot(r2, normal)) 
 
-        const restitution = 1.0;
+        const restitution = 1.0; // this should be a parameter
         const impulseMagnitude1 = (restitution + 1) 
                                 * (v2.dot(actor2.velocity, normal) 
                                    - v2.dot(actor1.velocity, normal) 
@@ -118,16 +115,10 @@ module gerpsquirrel.collision {
 
         actor1.applyImpulse(info.positions[0], impulse1);
         actor2.applyImpulse(info.positions[1], impulse2);
-
-        if (isNaN(actor1.energy + actor2.energy - energyBefore)) {
-            debugger;
-        }
     }
 
     // resolveCollision with fixedActor.mass => infinity
     export function resolveCollisionFixed(fixedActor: Actor, actor: Actor, info: CollisionInfo) {
-        const energyBefore = fixedActor.energy + actor.energy;
-
         const axis = info.axis;
         const normal = info.normal;
 

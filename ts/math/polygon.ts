@@ -6,7 +6,7 @@ module gerpsquirrel.polygon {
     import Vector2 = vector2.Vector2;
 
     export interface ProjectionInfo {
-        span: Vector2
+        span: Vector2 // The span of the projection along the projection axis [min, max]
         minPoint: Vector2
         maxPoint: Vector2
     }
@@ -39,7 +39,7 @@ module gerpsquirrel.polygon {
         }
         
         centroid(): Vector2 {
-            // Compute the average of the comprising triangle's centroids
+            // Compute the midpoint of the comprising triangles' centroids
             var total: Vector2 = [0, 0];
             for (var i = 2; i < this.vertices.length; ++i) {
                 total = v2.add(total, triangleCentroid(this.vertices[0], this.vertices[i], this.vertices[i - 1]));
