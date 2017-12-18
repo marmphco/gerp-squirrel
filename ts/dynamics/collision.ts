@@ -150,38 +150,38 @@ module gerpsquirrel.collision {
         actor2._center = v2.add(actor2.center, v2.scale(axis, -0.5));
     }
 
-    // TODO define NO_COLLISION instead of returning null. 
-    export function hullIntersection(hull0: ConvexBody, hull1: ConvexBody): CollisionInfo | null {
+    export interface Collidable {
+        projectionAxes(other: Collidable): Vector2[]
+        projectedOn(v: Vector2): polygon.ProjectionInfo
+    }
 
-        const checkProjectionAxes = function(hull: ConvexBody, otherHull: ConvexBody): CollisionInfo | null {
+    export function collisionInfo(collidable0: Collidable, collidable1: Collidable): CollisionInfo | null {
+
+        const checkProjectionAxes = function(collidable: Collidable, otherCollidable: Collidable): CollisionInfo | null {
             var minimumDepthCollision: CollisionInfo = new CollisionInfo();
 
-            const vertices = hull.worldVertices();
+            const projectionAxes = collidable.projectionAxes(otherCollidable);
 
-            for (var i = 0; i < vertices.length; i++) {
-                const baseVertex = vertices[i];
-                const headVertex = vertices[(i + 1) % vertices.length];
-                const edge = v2.subtract(headVertex, baseVertex);
-                const edgeNormal = v2.normalize(v2.counterClockwiseOrthogonal(edge));
+            for (var i = 0; i < projectionAxes.length; i++) {
+                const projectionAxis = projectionAxes[i];
+                const projectionInfo = collidable.projectedOn(projectionAxis);
+                const span = projectionInfo.span;
 
-                const projectionInfo = hull.projectedOn(edgeNormal);
-                const projected = projectionInfo.span;
+                const otherProjectionInfo = otherCollidable.projectedOn(projectionAxis);
+                const otherSpan = otherProjectionInfo.span;
 
-                const otherProjectionInfo = otherHull.projectedOn(edgeNormal);
-                const otherProjected = otherProjectionInfo.span;
-
-                if (projected[0] >= otherProjected[1] || projected[1] <= otherProjected[0]) {
+                if (span[0] >= otherSpan[1] || span[1] <= otherSpan[0]) {
                     return null;
                 }
 
-                const depthA = otherProjected[1] - projected[0];
-                const depthB = projected[1] - otherProjected[0];
+                const depthA = otherSpan[1] - span[0];
+                const depthB = span[1] - otherSpan[0];
 
                 if (depthA < depthB) {
                     if (depthA < minimumDepthCollision.depth) {
                         const positions: [Vector2, Vector2] = [
                             otherProjectionInfo.maxPoint, 
-                            v2.add(otherProjectionInfo.maxPoint, v2.scale(edgeNormal, -depthA))
+                            v2.add(otherProjectionInfo.maxPoint, v2.scale(projectionAxis, -depthA))
                         ];
                         minimumDepthCollision = new CollisionInfo(positions, depthA);
                     }
@@ -190,7 +190,7 @@ module gerpsquirrel.collision {
                     if (depthB < minimumDepthCollision.depth) {
                         const positions: [Vector2, Vector2] = [
                             otherProjectionInfo.minPoint,
-                            v2.add(otherProjectionInfo.minPoint, v2.scale(edgeNormal, depthB))
+                            v2.add(otherProjectionInfo.minPoint, v2.scale(projectionAxis, depthB))
                         ];
                         minimumDepthCollision = new CollisionInfo(positions, depthB);
                     }
@@ -204,12 +204,12 @@ module gerpsquirrel.collision {
             return minimumDepthCollision;
         }
 
-        const minimumDepthCollision0 = checkProjectionAxes(hull0, hull1);
+        const minimumDepthCollision0 = checkProjectionAxes(collidable0, collidable1);
         if (!minimumDepthCollision0) {
             return null;
         }
 
-        const minimumDepthCollision1 = checkProjectionAxes(hull1, hull0);
+        const minimumDepthCollision1 = checkProjectionAxes(collidable1, collidable0);
         if (!minimumDepthCollision1) {
             return null;
         }

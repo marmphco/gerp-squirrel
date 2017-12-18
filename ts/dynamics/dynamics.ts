@@ -14,23 +14,22 @@ module gerpsquirrel.dynamics {
     import Vector2 = vector2.Vector2;
 
     export class ConvexBody extends Actor {
-        polygon: ConvexPolygon;
-
-        private _worldVertices: Lazy<Vector2[]>;
+        private _polygon: ConvexPolygon;
+        private _worldPolygon: Lazy<ConvexPolygon>;
 
         private _bounds: Lazy<Box>;
 
         constructor(vertices: Array<Vector2>) {
             super(1, 1);
-            this.polygon = new ConvexPolygon(vertices)
+            this._polygon = new ConvexPolygon(vertices)
 
             // compute center of mass, assuming uniform mass distribution
-            const centerOfMass = this.polygon.centroid();
+            const centerOfMass = this._polygon.centroid();
 
-            this.polygon.vertices = vertices.map((vertex) => v2.subtract(vertex, centerOfMass));
+            this._polygon.vertices = vertices.map((vertex) => v2.subtract(vertex, centerOfMass));
 
-            this._worldVertices = new Lazy(() => {
-                return this.polygon.vertices.map((vertex) => this.fromLocalSpace(vertex));
+            this._worldPolygon = new Lazy(() => {
+                return new ConvexPolygon(this._polygon.vertices.map((vertex) => this.fromLocalSpace(vertex)));
             })
 
             this._bounds = new Lazy(() => {
@@ -39,7 +38,7 @@ module gerpsquirrel.dynamics {
                 var minY = Number.MAX_VALUE;
                 var maxY = Number.MIN_VALUE;
 
-                this.worldVertices().forEach((vertex) => {
+                this.worldPolygon().vertices.forEach((vertex) => {
                     minX = Math.min(minX, vertex[0]);
                     maxX = Math.max(maxX, vertex[0]);
                     minY = Math.min(minY, vertex[1]);
@@ -49,58 +48,45 @@ module gerpsquirrel.dynamics {
             });
         }
 
-        localVertices() {
-            return this.polygon.vertices;
-        }
-
         // override
         advance(timestep: number) {
             super.advance(timestep)
-            this._worldVertices.markDirty();
+            this._worldPolygon.markDirty();
             this._bounds.markDirty();
         }
 
         // override
         setCenter(center: Vector2) {
             super.setCenter(center);
-            this._worldVertices.markDirty();
+            this._worldPolygon.markDirty();
             this._bounds.markDirty();
         }
 
         // override
         setOrientation(orientation: number) {
             super.setOrientation(orientation);
-            this._worldVertices.markDirty();
+            this._worldPolygon.markDirty();
             this._bounds.markDirty();
         }
 
-        worldVertices() {
-            return this._worldVertices.value;
+        polygon() {
+            return this._polygon;
         }
 
-        worldVerticesInterpolated(t: number) {
+        // Polygon in world coordinates
+        worldPolygon() {
+            return this._worldPolygon.value();
+        }
+
+        worldPolygonInterpolated(t: number) {
             // cant cache these
-            return this.polygon.vertices.map((vertex) => this.fromLocalSpaceInterpolated(vertex, t));
+            return new ConvexPolygon(this._polygon.vertices.map((vertex) => {
+                return this.fromLocalSpaceInterpolated(vertex, t)
+            }));
         }
 
         worldBounds() {
-            return this._bounds.value;
-        }
-
-        projectedOn(axis: Vector2): polygon.ProjectionInfo {
-            const localAxis = v2.rotate(axis, -this.orientation)
-            const localProjected = this.polygon.projectedOn(localAxis)
-            const offset = v2.projectedLength(this.center, axis)
-
-            return {
-                span:[localProjected.span[0] + offset, localProjected.span[1] + offset],
-                minPoint:this.fromLocalSpace(localProjected.minPoint),
-                maxPoint:this.fromLocalSpace(localProjected.maxPoint),
-            }
-        }
-
-        contains(point: Vector2): boolean {
-            return this.polygon.contains(this.toLocalSpace(point))
+            return this._bounds.value();
         }
     }
 
@@ -126,7 +112,7 @@ module gerpsquirrel.dynamics {
         var totalMoment: number = 0;
         var totalArea: number = 0;
 
-        const vertices = hull.localVertices();
+        const vertices = hull.polygon().vertices;
         
         for (var i = 0; i < vertices.length; ++i) {
             const vertex1 = vertices[i];

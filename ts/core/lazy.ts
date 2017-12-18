@@ -10,7 +10,7 @@ module gerpsquirrel.lazy {
             this._generator = generator
         }
 
-        get value(): T {
+        value(): T {
             if (this._dirty) {
                 this._value = this._generator()
                 this._dirty = false

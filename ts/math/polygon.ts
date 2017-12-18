@@ -72,6 +72,14 @@ module gerpsquirrel.polygon {
                 maxPoint: maxVertex
             }
         }
+
+        projectionAxes(other: collision.Collidable) {
+            return this.vertices.map((baseVertex, index, vertices) => {
+                const headVertex = vertices[(index + 1) % vertices.length];
+                const edge = v2.subtract(headVertex, baseVertex);
+                return v2.normalize(v2.counterClockwiseOrthogonal(edge));
+            });
+        }
     }
 
     // returns the centroid of triangle with vertices `a`, `b`, and `c`.
