@@ -13,6 +13,49 @@ module gerpsquirrel.dynamics {
     import Lazy = lazy.Lazy;
     import Vector2 = vector2.Vector2;
 
+    export class CircleBody extends Actor implements collision.Collidable {
+        private _radius: number;
+
+        constructor(mass: number, radius: number) {
+            super(mass, mass * Math.PI / 2 * radius * radius);
+
+            this._radius = radius;
+        }
+
+        worldBounds() {
+            return Box.withCenterandHalfSize(this._center, [this._radius, this._radius]);
+        }
+
+        contains(v: Vector2) {
+            return v2.length(v2.subtract(v, this._center)) <= this._radius;
+        }
+
+        projectedOn(axis: Vector2): polygon.ProjectionInfo {
+
+            const projectedLength = v2.projectedLength(this._center, axis);
+
+            return {
+                span: [projectedLength - this._radius, projectedLength + this._radius],
+                minPoint: v2.subtract(this._center, v2.scale(axis, this._radius)),
+                maxPoint: v2.add(this._center, v2.scale(axis, this._radius))
+            }
+        }
+
+        projectionAxes(other: collision.Collidable): Vector2[] {
+            // crappy, but whatever
+            if (other instanceof ConvexPolygon) {
+                return other.vertices.map((vertex) => {
+                    return v2.normalize(v2.subtract(vertex, this._center))
+                });
+            }
+            else if (other instanceof CircleBody) {
+                return [v2.normalize(v2.subtract(other._center, this._center))];
+            }
+
+            return []
+        }
+    }
+
     export class ConvexBody extends Actor {
         private _polygon: ConvexPolygon;
         private _worldPolygon: Lazy<ConvexPolygon>;
