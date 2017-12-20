@@ -1,5 +1,5 @@
-/// <reference path="../math/shape.ts" />
-/// <reference path="../math/vector.ts" />
+/// <reference path="../geom/shape.ts" />
+/// <reference path="../geom/vector.ts" />
 /// <reference path="./dynamics.ts" />
 
 module gerpsquirrel.collision {

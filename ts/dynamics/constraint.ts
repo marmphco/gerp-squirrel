@@ -1,5 +1,5 @@
-/// <reference path="../math/vector.ts" />
-/// <reference path="../math/region.ts" />
+/// <reference path="../geom/vector.ts" />
+/// <reference path="../geom/region.ts" />
 /// <reference path="actor.ts" />
 /// <reference path="dynamics.ts" />
 

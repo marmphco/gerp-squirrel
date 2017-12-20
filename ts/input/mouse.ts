@@ -1,5 +1,5 @@
 /// <reference path="../core/stream.ts" />
-/// <reference path="../math/vector.ts" />
+/// <reference path="../geom/vector.ts" />
 
 module gerpsquirrel.input {
 

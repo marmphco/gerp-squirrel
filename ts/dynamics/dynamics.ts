@@ -1,9 +1,9 @@
 /// <reference path="actor.ts" />
 /// <reference path="../core/lazy.ts" />
-/// <reference path="../math/vector.ts" />
-/// <reference path="../math/box.ts" />
-/// <reference path="../math/circle.ts" />
-/// <reference path="../math/polygon.ts" />
+/// <reference path="../geom/vector.ts" />
+/// <reference path="../geom/box.ts" />
+/// <reference path="../geom/circle.ts" />
+/// <reference path="../geom/polygon.ts" />
 
 module gerpsquirrel.dynamics {
 

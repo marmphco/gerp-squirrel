@@ -1,12 +1,48 @@
-/// <reference path="../math/shape.ts" />
-/// <reference path="../math/vector.ts" />
+/// <reference path="../geom/point.ts" />
+/// <reference path="../geom/shape.ts" />
+/// <reference path="../geom/vector.ts" />
 
 module gerpsquirrel.dynamics {
 
     import v2 = gerpsquirrel.vector2;
 
+    import Point = point.Point;
     import Shape = shape.Shape;
     import Vector2 = v2.Vector2;
+
+    export interface _Actor extends CoordinateSpace {
+        mass(): number
+        
+        center(): Vector2
+        centerInterpolated(t: number): Vector2
+        setCenter(center: Vector2): void
+
+        velocity(): Vector2
+        velocityAt(point: Vector2): Vector2 
+        setVelocity(velocity: Vector2): void
+
+        orientation(): number
+        setOrientation(orientation: number): void
+
+        angularVelocity(): number
+        setAngularVelocity(angularVelocity: number): void
+
+        advance(timestep: number): void
+        applyForce(from: Vector2, force: Vector2): void
+        applyImpulse(from: Vector2, impulse: Vector2): void
+
+        // Make these free functions since they are derived from other values?
+        linearEnergy(): number
+        angularEnergy(): number
+        energy(): number
+
+        fromLocalSpaceInterpolated(u: Vector2, t: number): Vector2
+    }
+
+    export interface CoordinateSpace {
+        toLocalSpace(u: Vector2): Vector2
+        fromLocalSpace(u: Vector2): Vector2
+    }
 
     export class Actor {
         mass: number;
@@ -102,7 +138,7 @@ module gerpsquirrel.dynamics {
         }
 
         shape(): Shape {
-            return new shape.Point(this._center);
+            return new Point(this._center);
         }
 
         // Converting to/from Local Space

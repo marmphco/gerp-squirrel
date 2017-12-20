@@ -1,5 +1,5 @@
-/// <reference path="../math/vector.ts" />
-/// <reference path="../math/box.ts" />
+/// <reference path="../geom/vector.ts" />
+/// <reference path="../geom/box.ts" />
 
 module gerpsquirrel.quadtree {
 
