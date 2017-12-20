@@ -1,3 +1,4 @@
+/// <reference path="../math/shape.ts" />
 /// <reference path="../math/vector.ts" />
 /// <reference path="./dynamics.ts" />
 
@@ -8,6 +9,8 @@ module gerpsquirrel.collision {
 
     import Actor = dynamics.Actor;
     import ConvexBody = dynamics.ConvexBody;
+    import Shape = shape.Shape;
+    import ShapeProjection = shape.ShapeProjection;
     import Vector2 = v2.Vector2;
 
     export class CollisionInfo {
@@ -150,24 +153,19 @@ module gerpsquirrel.collision {
         actor2._center = v2.add(actor2.center, v2.scale(axis, -0.5));
     }
 
-    export interface Collidable {
-        projectionAxes(other: Collidable): Vector2[]
-        projectedOn(v: Vector2): polygon.ProjectionInfo
-    }
+    export function collisionInfo(shape0: Shape, shape1: Shape): CollisionInfo | null {
 
-    export function collisionInfo(collidable0: Collidable, collidable1: Collidable): CollisionInfo | null {
-
-        const checkProjectionAxes = function(collidable: Collidable, otherCollidable: Collidable): CollisionInfo | null {
+        const checkProjectionAxes = function(shape: Shape, otherShape: Shape): CollisionInfo | null {
             var minimumDepthCollision: CollisionInfo = new CollisionInfo();
 
-            const projectionAxes = collidable.projectionAxes(otherCollidable);
+            const projectionAxes = shape.projectionAxes(otherShape);
 
             for (var i = 0; i < projectionAxes.length; i++) {
                 const projectionAxis = projectionAxes[i];
-                const projectionInfo = collidable.projectedOn(projectionAxis);
+                const projectionInfo = shape.projectedOn(projectionAxis);
                 const span = projectionInfo.span;
 
-                const otherProjectionInfo = otherCollidable.projectedOn(projectionAxis);
+                const otherProjectionInfo = otherShape.projectedOn(projectionAxis);
                 const otherSpan = otherProjectionInfo.span;
 
                 if (span[0] >= otherSpan[1] || span[1] <= otherSpan[0]) {
@@ -204,12 +202,12 @@ module gerpsquirrel.collision {
             return minimumDepthCollision;
         }
 
-        const minimumDepthCollision0 = checkProjectionAxes(collidable0, collidable1);
+        const minimumDepthCollision0 = checkProjectionAxes(shape0, shape1);
         if (!minimumDepthCollision0) {
             return null;
         }
 
-        const minimumDepthCollision1 = checkProjectionAxes(collidable1, collidable0);
+        const minimumDepthCollision1 = checkProjectionAxes(shape1, shape0);
         if (!minimumDepthCollision1) {
             return null;
         }

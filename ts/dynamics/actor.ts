@@ -1,9 +1,11 @@
+/// <reference path="../math/shape.ts" />
 /// <reference path="../math/vector.ts" />
 
 module gerpsquirrel.dynamics {
 
     import v2 = gerpsquirrel.vector2;
 
+    import Shape = shape.Shape;
     import Vector2 = v2.Vector2;
 
     export class Actor {
@@ -97,6 +99,10 @@ module gerpsquirrel.dynamics {
 
         get energy(): number {
             return this.linearEnergy + this.angularEnergy;
+        }
+
+        shape(): Shape {
+            return new shape.Point(this._center);
         }
 
         // Converting to/from Local Space

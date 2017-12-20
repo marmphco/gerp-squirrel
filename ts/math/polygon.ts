@@ -8,13 +8,8 @@ module gerpsquirrel.polygon {
 
     import Box = box.Box;
     import Shape = shape.Shape;
+    import ShapeProjection = shape.ShapeProjection;
     import Vector2 = vector2.Vector2;
-
-    export interface ProjectionInfo {
-        span: Vector2 // The span of the projection along the projection axis [min, max]
-        minPoint: Vector2
-        maxPoint: Vector2
-    }
 
     export class ConvexPolygon implements Shape {
         vertices: Vector2[]
@@ -70,7 +65,15 @@ module gerpsquirrel.polygon {
             return hasClockwise != hasCounterClockwise;
         }
 
-        projectedOn(axis: Vector2): ProjectionInfo {
+        projectionAxes(other: Shape) {
+            return this.vertices.map((baseVertex, index, vertices) => {
+                const headVertex = vertices[(index + 1) % vertices.length];
+                const edge = v2.subtract(headVertex, baseVertex);
+                return v2.normalize(v2.counterClockwiseOrthogonal(edge));
+            });
+        }
+
+        projectedOn(axis: Vector2): ShapeProjection {
             var projectedSpan: Vector2 = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
             var minVertex: Vector2 = [0, 0];
             var maxVertex: Vector2 = [0, 0];
@@ -93,14 +96,6 @@ module gerpsquirrel.polygon {
                 minPoint: minVertex,
                 maxPoint: maxVertex
             }
-        }
-
-        projectionAxes(other: collision.Collidable) {
-            return this.vertices.map((baseVertex, index, vertices) => {
-                const headVertex = vertices[(index + 1) % vertices.length];
-                const edge = v2.subtract(headVertex, baseVertex);
-                return v2.normalize(v2.counterClockwiseOrthogonal(edge));
-            });
         }
     }
 

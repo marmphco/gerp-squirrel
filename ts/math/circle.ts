@@ -10,6 +10,7 @@ module gerpsquirrel.circle {
     import Box = box.Box
     import ConvexPolygon = polygon.ConvexPolygon
     import Shape = shape.Shape
+    import ShapeProjection = shape.ShapeProjection
     import Vector2 = vector2.Vector2
 
      export class Circle implements Shape {
@@ -43,18 +44,7 @@ module gerpsquirrel.circle {
             return v2.lengthSquared(v2.subtract(u, this._centroid)) < this._radius * this._radius;
         }
 
-        projectedOn(axis: Vector2): polygon.ProjectionInfo {
-
-            const projectedLength = v2.projectedLength(this._centroid, axis);
-
-            return {
-                span: [projectedLength - this._radius, projectedLength + this._radius],
-                minPoint: v2.subtract(this._centroid, v2.scale(axis, this._radius)),
-                maxPoint: v2.add(this._centroid, v2.scale(axis, this._radius))
-            }
-        }
-
-        projectionAxes(other: collision.Collidable): Vector2[] {
+        projectionAxes(other: Shape): Vector2[] {
             // crappy, but whatever
             if (other instanceof ConvexPolygon) {
                 return other.vertices.map((vertex) => {
@@ -66,6 +56,17 @@ module gerpsquirrel.circle {
             }
 
             return []
+        }
+
+        projectedOn(axis: Vector2): ShapeProjection {
+
+            const projectedLength = v2.projectedLength(this._centroid, axis);
+
+            return {
+                span: [projectedLength - this._radius, projectedLength + this._radius],
+                minPoint: v2.subtract(this._centroid, v2.scale(axis, this._radius)),
+                maxPoint: v2.add(this._centroid, v2.scale(axis, this._radius))
+            }
         }
     }
 }

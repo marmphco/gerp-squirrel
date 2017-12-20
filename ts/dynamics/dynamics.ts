@@ -36,6 +36,11 @@ module gerpsquirrel.dynamics {
             this._circle.setCentroid(center);
         }
 
+        // override
+        shape(): shape.Shape {
+            return this._circle;
+        }
+
         circle(): Circle {
             return this._circle;
         }
@@ -88,6 +93,10 @@ module gerpsquirrel.dynamics {
             super.setOrientation(orientation);
             this._worldPolygon.markDirty();
             this._bounds.markDirty();
+        }
+
+        shape(): shape.Shape {
+            return this._worldPolygon.value();
         }
 
         polygon() {
