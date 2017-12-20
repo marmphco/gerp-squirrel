@@ -11,6 +11,57 @@ module gerpsquirrel.polygon {
         maxPoint: Vector2
     }
 
+    export class Circle {
+        private _center: Vector2
+        private _radius: number
+
+        constructor(center: Vector2, radius: number) {
+            this._center = center;
+            this._radius = radius;
+        }
+
+        radius(): number {
+            return this._radius;
+        }
+
+        setCenter(center: Vector2) {
+            this._center = center;
+        }
+
+        contains(u: Vector2): boolean {
+            return v2.lengthSquared(v2.subtract(u, this._center)) < this._radius * this._radius;
+        }
+
+        centroid(): Vector2 {
+            return this._center;
+        }
+
+        projectedOn(axis: Vector2): polygon.ProjectionInfo {
+
+            const projectedLength = v2.projectedLength(this._center, axis);
+
+            return {
+                span: [projectedLength - this._radius, projectedLength + this._radius],
+                minPoint: v2.subtract(this._center, v2.scale(axis, this._radius)),
+                maxPoint: v2.add(this._center, v2.scale(axis, this._radius))
+            }
+        }
+
+        projectionAxes(other: collision.Collidable): Vector2[] {
+            // crappy, but whatever
+            if (other instanceof ConvexPolygon) {
+                return other.vertices.map((vertex) => {
+                    return v2.normalize(v2.subtract(vertex, this._center))
+                });
+            }
+            else if (other instanceof Circle) {
+                return [v2.normalize(v2.subtract(other._center, this._center))];
+            }
+
+            return []
+        }
+    }
+
     export class ConvexPolygon {
         vertices: Vector2[]
 
