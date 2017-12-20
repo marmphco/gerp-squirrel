@@ -35,37 +35,4 @@ module gerpsquirrel.shape {
         projectionAxes(other: Shape): Vector2[]
         projectedOn(axis: Vector2): ShapeProjection
     }
-
-    export class Point implements Shape {
-        private _v: Vector2
-
-        constructor(v: Vector2) {
-            this._v = v
-        }
-
-        bounds(): Box {
-            return new Box(this._v, [0, 0])
-        }
-
-        centroid(): Vector2 {
-            return this._v
-        }
-
-        contains(v: Vector2): boolean {
-            return false
-        }
-
-        projectionAxes(other: Shape): Vector2[] {
-            return [];
-        }
-
-        projectedOn(axis: Vector2): ShapeProjection {
-            const projectedLength = vector2.projectedLength(this._v, axis)
-            return {
-                span: [projectedLength, projectedLength],
-                minPoint: this._v,
-                maxPoint: this._v
-            }
-        }
-    }
 }
