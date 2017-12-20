@@ -2,6 +2,7 @@
 /// <reference path="../core/lazy.ts" />
 /// <reference path="../math/vector.ts" />
 /// <reference path="../math/box.ts" />
+/// <reference path="../math/circle.ts" />
 /// <reference path="../math/polygon.ts" />
 
 module gerpsquirrel.dynamics {
@@ -9,37 +10,38 @@ module gerpsquirrel.dynamics {
     import v2 = vector2;
     
     import Box = box.Box;
+    import Circle = circle.Circle;
     import ConvexPolygon = polygon.ConvexPolygon;
     import Lazy = lazy.Lazy;
     import Vector2 = vector2.Vector2;
 
     export class CircleBody extends Actor {
-        private _circle: polygon.Circle;
+        private _circle: Circle;
 
         constructor(mass: number, radius: number) {
             super(mass, mass * Math.PI / 2 * radius * radius);
 
-            this._circle = new polygon.Circle([0, 0], radius);
+            this._circle = new Circle([0, 0], radius);
         }
 
         // override
         advance(timestep: number) {
             super.advance(timestep);
-            this._circle.setCenter(this._center);
+            this._circle.setCentroid(this._center);
         }
 
         // override
         setCenter(center: Vector2) {
             super.setCenter(center);
-            this._circle.setCenter(center);
+            this._circle.setCentroid(center);
         }
 
-        circle(): polygon.Circle {
+        circle(): Circle {
             return this._circle;
         }
 
         worldBounds() {
-            return Box.withCenterandHalfSize(this._center, [this._circle.radius(), this._circle.radius()]);
+            return this._circle.bounds();
         }
     }
 
@@ -63,18 +65,7 @@ module gerpsquirrel.dynamics {
             })
 
             this._bounds = new Lazy(() => {
-                var minX = Number.MAX_VALUE;
-                var maxX = Number.MIN_VALUE;
-                var minY = Number.MAX_VALUE;
-                var maxY = Number.MIN_VALUE;
-
-                this.worldPolygon().vertices.forEach((vertex) => {
-                    minX = Math.min(minX, vertex[0]);
-                    maxX = Math.max(maxX, vertex[0]);
-                    minY = Math.min(minY, vertex[1]);
-                    maxY = Math.max(maxY, vertex[1]);
-                });
-                return new Box([minX, minY], [maxX - minX, maxY - minY]);
+                return this.worldPolygon().bounds();
             });
         }
 

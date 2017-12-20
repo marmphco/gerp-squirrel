@@ -1,8 +1,13 @@
-/// <reference path="./vector.ts" />
+/// <reference path="box.ts" />
+/// <reference path="shape.ts" />
+/// <reference path="vector.ts" />
 
 module gerpsquirrel.polygon {
 
     import v2 = vector2;
+
+    import Box = box.Box;
+    import Shape = shape.Shape;
     import Vector2 = vector2.Vector2;
 
     export interface ProjectionInfo {
@@ -11,62 +16,38 @@ module gerpsquirrel.polygon {
         maxPoint: Vector2
     }
 
-    export class Circle {
-        private _center: Vector2
-        private _radius: number
-
-        constructor(center: Vector2, radius: number) {
-            this._center = center;
-            this._radius = radius;
-        }
-
-        radius(): number {
-            return this._radius;
-        }
-
-        setCenter(center: Vector2) {
-            this._center = center;
-        }
-
-        contains(u: Vector2): boolean {
-            return v2.lengthSquared(v2.subtract(u, this._center)) < this._radius * this._radius;
-        }
-
-        centroid(): Vector2 {
-            return this._center;
-        }
-
-        projectedOn(axis: Vector2): polygon.ProjectionInfo {
-
-            const projectedLength = v2.projectedLength(this._center, axis);
-
-            return {
-                span: [projectedLength - this._radius, projectedLength + this._radius],
-                minPoint: v2.subtract(this._center, v2.scale(axis, this._radius)),
-                maxPoint: v2.add(this._center, v2.scale(axis, this._radius))
-            }
-        }
-
-        projectionAxes(other: collision.Collidable): Vector2[] {
-            // crappy, but whatever
-            if (other instanceof ConvexPolygon) {
-                return other.vertices.map((vertex) => {
-                    return v2.normalize(v2.subtract(vertex, this._center))
-                });
-            }
-            else if (other instanceof Circle) {
-                return [v2.normalize(v2.subtract(other._center, this._center))];
-            }
-
-            return []
-        }
-    }
-
-    export class ConvexPolygon {
+    export class ConvexPolygon implements Shape {
         vertices: Vector2[]
 
         constructor(vertices: Vector2[]) {
             this.vertices = vertices
+        }
+
+        // Shape
+
+        bounds(): Box {
+            var minX = Number.MAX_VALUE;
+            var maxX = Number.MIN_VALUE;
+            var minY = Number.MAX_VALUE;
+            var maxY = Number.MIN_VALUE;
+
+            this.vertices.forEach((vertex) => {
+                minX = Math.min(minX, vertex[0]);
+                maxX = Math.max(maxX, vertex[0]);
+                minY = Math.min(minY, vertex[1]);
+                maxY = Math.max(maxY, vertex[1]);
+            });
+            return new Box([minX, minY], [maxX - minX, maxY - minY]);
+        }
+
+        centroid(): Vector2 {
+            // Compute the midpoint of the comprising triangles' centroids
+            var total: Vector2 = [0, 0];
+            for (var i = 2; i < this.vertices.length; ++i) {
+                total = v2.add(total, triangleCentroid(this.vertices[0], this.vertices[i], this.vertices[i - 1]));
+            }
+
+            return v2.scale(total, 1 / (this.vertices.length - 2));
         }
 
         contains(u: Vector2): boolean {
@@ -87,16 +68,6 @@ module gerpsquirrel.polygon {
                 }
             }
             return hasClockwise != hasCounterClockwise;
-        }
-        
-        centroid(): Vector2 {
-            // Compute the midpoint of the comprising triangles' centroids
-            var total: Vector2 = [0, 0];
-            for (var i = 2; i < this.vertices.length; ++i) {
-                total = v2.add(total, triangleCentroid(this.vertices[0], this.vertices[i], this.vertices[i - 1]));
-            }
-
-            return v2.scale(total, 1 / (this.vertices.length - 2));
         }
 
         projectedOn(axis: Vector2): ProjectionInfo {
