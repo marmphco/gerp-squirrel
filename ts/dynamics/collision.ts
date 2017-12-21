@@ -36,6 +36,23 @@ module gerpsquirrel.collision {
         actor2.applyImpulse(intersection.positions[1], impulse2);
     }
 
+    export function impulseMagnitude(actor1: Actor, actor2: Actor, impactPoint: Vector2, axis: Vector2) {
+        const r1 = v2.subtract(impactPoint, actor1.center);
+        const r2 = v2.subtract(impactPoint, actor2.center);
+
+        const massFunction = (1 / actor1.mass + 1 / actor2.mass) * v2.dot(axis, axis)
+                           + (1 / actor1.momentOfInertia) * (v2.lengthSquared(r1) - v2.dot(r1, axis) * v2.dot(r1, axis)) 
+                           + (1 / actor2.momentOfInertia) * (v2.lengthSquared(r2) - v2.dot(r2, axis) * v2.dot(r2, axis)) 
+
+        const impulseMagnitude = (v2.dot(actor2.velocity, axis) 
+                                  - v2.dot(actor1.velocity, axis) 
+                                  + actor2.angularVelocity * v2.crossLength(axis, r2) 
+                                  - actor1.angularVelocity * v2.crossLength(axis, r1)) 
+                               / massFunction;
+
+        return impulseMagnitude
+    }
+
     export function resolveCollision(actor1: Actor, actor2: Actor, intersection: Intersection) {
 
         // project out of collision
@@ -46,29 +63,39 @@ module gerpsquirrel.collision {
         actor1.center = v2.add(actor1.center, v2.scale(axis, weight1));
         actor2.center = v2.add(actor2.center, v2.scale(axis, -weight2));
 
-        // apply impulses
+        // apply normal impulses
         const impactPoint = v2.add(intersection.positions[0], v2.scale(axis, weight1));
-        const r1 = v2.subtract(impactPoint, actor1.center);
-        const r2 = v2.subtract(impactPoint, actor2.center);
 
-        const normal = intersection.normal;
-        const massFunction = (1 / actor1.mass + 1 / actor2.mass) * v2.dot(normal, normal)
-                           + (1 / actor1.momentOfInertia) * (v2.lengthSquared(r1) - v2.dot(r1, normal) * v2.dot(r1, normal)) 
-                           + (1 / actor2.momentOfInertia) * (v2.lengthSquared(r2) - v2.dot(r2, normal) * v2.dot(r2, normal)) 
+        const restitution = 0.9; // this should be a parameter
+        const normal = intersection.normal
+        const normalImpulseMagnitude = impulseMagnitude(actor1, actor2, impactPoint, normal) 
+                                       * (1 + restitution)
 
-        const restitution = 1.0; // this should be a parameter
-        const impulseMagnitude1 = (restitution + 1) 
-                                * (v2.dot(actor2.velocity, normal) 
-                                   - v2.dot(actor1.velocity, normal) 
-                                   + actor2.angularVelocity * v2.crossLength(normal, r2) 
-                                   - actor1.angularVelocity * v2.crossLength(normal, r1)) 
-                                / massFunction;
+        const impulse1Normal = v2.scale(normal, normalImpulseMagnitude)
+        const impulse2Normal = v2.scale(normal, -normalImpulseMagnitude)
 
-        const impulse1 = v2.scale(normal, impulseMagnitude1);
-        const impulse2 = v2.scale(impulse1, -1);
+        actor1.applyImpulse(intersection.positions[0], impulse1Normal)
+        actor2.applyImpulse(intersection.positions[1], impulse2Normal)
 
-        actor1.applyImpulse(intersection.positions[0], impulse1);
-        actor2.applyImpulse(intersection.positions[1], impulse2);
+        // apply tangent impulses (very not physically accurate friction)
+        const tangent = intersection.tangent;
+
+        // [0, inf?] determines how strong the "stick" is. 
+        // 0 means no stick, inf means a lot of stick
+        // should be passed as parameter
+        const frictionCoefficient = 10;
+
+        // proportional to the impulse applied across the collision normal
+        const normalCoefficient = Math.abs(normalImpulseMagnitude);
+
+        const tangentImpulseMagnitude = impulseMagnitude(actor1, actor2, impactPoint, tangent) 
+                                        * (1 - 1 / (frictionCoefficient * normalCoefficient + 1))
+
+        const impulse1Tangent = v2.scale(tangent, tangentImpulseMagnitude)
+        const impulse2Tangent = v2.scale(tangent, -tangentImpulseMagnitude)
+
+        actor1.applyImpulse(intersection.positions[0], impulse1Tangent)
+        actor2.applyImpulse(intersection.positions[1], impulse2Tangent)     
     }
 
     // resolveCollision with fixedActor.mass => infinity
