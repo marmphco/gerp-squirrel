@@ -1,3 +1,4 @@
+/// <reference path="../core/lazy.ts" />
 /// <reference path="box.ts" />
 /// <reference path="shape.ts" />
 /// <reference path="vector.ts" />
@@ -7,42 +8,59 @@ module gerpsquirrel.polygon {
     import v2 = vector2;
 
     import Box = box.Box;
+    import Lazy = lazy.Lazy;
     import Shape = shape.Shape;
     import ShapeProjection = shape.ShapeProjection;
     import Vector2 = vector2.Vector2;
 
     export class ConvexPolygon implements Shape {
-        vertices: Vector2[]
+        private _vertices: Vector2[]
+        private _bounds: Lazy<Box>
+        private _centroid: Lazy<Vector2>
+        private _projectionAxes: Lazy<Vector2[]>
 
         constructor(vertices: Vector2[]) {
-            this.vertices = vertices
+            this._vertices = vertices
+
+            this._bounds = new Lazy(() => {
+                var minX = Number.MAX_VALUE;
+                var maxX = Number.MIN_VALUE;
+                var minY = Number.MAX_VALUE;
+                var maxY = Number.MIN_VALUE;
+
+                this._vertices.forEach((vertex) => {
+                    minX = Math.min(minX, vertex[0]);
+                    maxX = Math.max(maxX, vertex[0]);
+                    minY = Math.min(minY, vertex[1]);
+                    maxY = Math.max(maxY, vertex[1]);
+                });
+
+                return new Box([minX, minY], [maxX - minX, maxY - minY]);
+            });
+
+            this._centroid = new Lazy(() => convexCentroid(this._vertices))
+
+            this._projectionAxes = new Lazy(() => {
+                return this._vertices.map((baseVertex, index, vertices) => {
+                    const headVertex = vertices[(index + 1) % vertices.length];
+                    const edge = v2.subtract(headVertex, baseVertex);
+                    return v2.normalize(v2.counterClockwiseOrthogonal(edge));
+                });
+            })
+        }
+
+        vertices(): Vector2[] {
+            return this._vertices;
         }
 
         // Shape
 
         bounds(): Box {
-            var minX = Number.MAX_VALUE;
-            var maxX = Number.MIN_VALUE;
-            var minY = Number.MAX_VALUE;
-            var maxY = Number.MIN_VALUE;
-
-            this.vertices.forEach((vertex) => {
-                minX = Math.min(minX, vertex[0]);
-                maxX = Math.max(maxX, vertex[0]);
-                minY = Math.min(minY, vertex[1]);
-                maxY = Math.max(maxY, vertex[1]);
-            });
-            return new Box([minX, minY], [maxX - minX, maxY - minY]);
+            return this._bounds.value()
         }
 
         centroid(): Vector2 {
-            // Compute the midpoint of the comprising triangles' centroids
-            var total: Vector2 = [0, 0];
-            for (var i = 2; i < this.vertices.length; ++i) {
-                total = v2.add(total, triangleCentroid(this.vertices[0], this.vertices[i], this.vertices[i - 1]));
-            }
-
-            return v2.scale(total, 1 / (this.vertices.length - 2));
+            return this._centroid.value()
         }
 
         contains(u: Vector2): boolean {
@@ -50,9 +68,9 @@ module gerpsquirrel.polygon {
             var hasClockwise = false;
             var hasCounterClockwise = false;
 
-            for (var i = 0; i < this.vertices.length; i++) {
-                const base = this.vertices[i];
-                const tip = this.vertices[(i + 1) % this.vertices.length];
+            for (var i = 0; i < this._vertices.length; i++) {
+                const base = this._vertices[i];
+                const tip = this._vertices[(i + 1) % this._vertices.length];
                 const edge = v2.subtract(tip, base);
                 const baseToPoint = v2.subtract(u, base);
                 if (v2.orientation(edge, baseToPoint) == v2.Orientation.Clockwise) {
@@ -66,11 +84,7 @@ module gerpsquirrel.polygon {
         }
 
         projectionAxes(other: Shape) {
-            return this.vertices.map((baseVertex, index, vertices) => {
-                const headVertex = vertices[(index + 1) % vertices.length];
-                const edge = v2.subtract(headVertex, baseVertex);
-                return v2.normalize(v2.counterClockwiseOrthogonal(edge));
-            });
+            return this._projectionAxes.value();
         }
 
         projectedOn(axis: Vector2): ShapeProjection {
@@ -78,7 +92,7 @@ module gerpsquirrel.polygon {
             var minVertex: Vector2 = [0, 0];
             var maxVertex: Vector2 = [0, 0];
 
-            this.vertices.forEach((vertex) => {
+            this._vertices.forEach((vertex) => {
                 const projectedVertex = v2.projectedLength(vertex, axis);
 
                 if (projectedVertex < projectedSpan[0]) {
@@ -97,6 +111,16 @@ module gerpsquirrel.polygon {
                 maxPoint: maxVertex
             }
         }
+    }
+
+    export function convexCentroid(vertices: Vector2[]): Vector2 {
+        // Compute the midpoint of the comprising triangles' centroids
+        var total: Vector2 = [0, 0];
+        for (var i = 2; i < vertices.length; ++i) {
+            total = v2.add(total, triangleCentroid(vertices[0], vertices[i], vertices[i - 1]));
+        }
+
+        return v2.scale(total, 1 / (vertices.length - 2));
     }
 
     // returns the centroid of triangle with vertices `a`, `b`, and `c`.

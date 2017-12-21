@@ -47,7 +47,7 @@ module gerpsquirrel.circle {
         projectionAxes(other: Shape): Vector2[] {
             // crappy, but whatever
             if (other instanceof ConvexPolygon) {
-                return other.vertices.map((vertex) => {
+                return other.vertices().map((vertex) => {
                     return v2.normalize(v2.subtract(vertex, this._centroid))
                 });
             }

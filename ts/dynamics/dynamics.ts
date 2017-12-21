@@ -44,55 +44,43 @@ module gerpsquirrel.dynamics {
         circle(): Circle {
             return this._circle;
         }
-
-        worldBounds() {
-            return this._circle.bounds();
-        }
     }
 
     export class ConvexBody extends Actor {
         private _polygon: ConvexPolygon;
         private _worldPolygon: Lazy<ConvexPolygon>;
 
-        private _bounds: Lazy<Box>;
-
-        constructor(vertices: Array<Vector2>) {
-            super(1, 1);
-            this._polygon = new ConvexPolygon(vertices)
+        constructor(mass: number, vertices: Array<Vector2>) {
+            super(mass, 1);
 
             // compute center of mass, assuming uniform mass distribution
-            const centerOfMass = this._polygon.centroid();
+            const centerOfMass = polygon.convexCentroid(vertices);
 
-            this._polygon.vertices = vertices.map((vertex) => v2.subtract(vertex, centerOfMass));
+            this._polygon = new ConvexPolygon(vertices.map((vertex) => v2.subtract(vertex, centerOfMass)));
 
             this._worldPolygon = new Lazy(() => {
-                return new ConvexPolygon(this._polygon.vertices.map((vertex) => this.fromLocalSpace(vertex)));
+                return new ConvexPolygon(this._polygon.vertices().map((vertex) => this.fromLocalSpace(vertex)));
             })
 
-            this._bounds = new Lazy(() => {
-                return this.worldPolygon().bounds();
-            });
+            this.momentOfInertia = convexMomentOfInertia(this)
         }
 
         // override
         advance(timestep: number) {
             super.advance(timestep)
             this._worldPolygon.markDirty();
-            this._bounds.markDirty();
         }
 
         // override
         setCenter(center: Vector2) {
             super.setCenter(center);
             this._worldPolygon.markDirty();
-            this._bounds.markDirty();
         }
 
         // override
         setOrientation(orientation: number) {
             super.setOrientation(orientation);
             this._worldPolygon.markDirty();
-            this._bounds.markDirty();
         }
 
         shape(): shape.Shape {
@@ -110,13 +98,9 @@ module gerpsquirrel.dynamics {
 
         worldPolygonInterpolated(t: number) {
             // cant cache these
-            return new ConvexPolygon(this._polygon.vertices.map((vertex) => {
+            return new ConvexPolygon(this._polygon.vertices().map((vertex) => {
                 return this.fromLocalSpaceInterpolated(vertex, t)
             }));
-        }
-
-        worldBounds() {
-            return this._bounds.value();
         }
     }
 
@@ -142,7 +126,7 @@ module gerpsquirrel.dynamics {
         var totalMoment: number = 0;
         var totalArea: number = 0;
 
-        const vertices = hull.polygon().vertices;
+        const vertices = hull.polygon().vertices();
         
         for (var i = 0; i < vertices.length; ++i) {
             const vertex1 = vertices[i];
