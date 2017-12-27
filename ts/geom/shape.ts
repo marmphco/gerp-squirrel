@@ -34,5 +34,8 @@ module gerpsquirrel.shape {
 
         projectionAxes(other: Shape): Vector2[]
         projectedOn(axis: Vector2): ShapeProjection
+
+        // assumes density is uniformly distributed
+        secondMoment(density: number): number
     }
 }

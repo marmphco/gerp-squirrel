@@ -111,6 +111,23 @@ module gerpsquirrel.polygon {
                 maxPoint: maxVertex
             }
         }
+
+        secondMoment(density: number): number {
+            var totalMoment: number = 0;
+            var totalArea: number = 0;
+
+            const vertices = this._vertices;
+            
+            for (var i = 0; i < vertices.length; ++i) {
+                const vertex1 = vertices[i];
+                const vertex2 = vertices[(i + 1) % vertices.length];
+                const triangleMoment = triangleSecondMoment(v2.ZERO, vertex1, vertex2, v2.ZERO, density);
+                const area = triangleArea(v2.ZERO, vertex1, vertex2);
+                totalMoment += triangleMoment * area;
+                totalArea += area;
+            }
+            return totalMoment / totalArea;
+        }
     }
 
     export function convexCentroid(vertices: Vector2[]): Vector2 {
@@ -157,5 +174,23 @@ module gerpsquirrel.polygon {
         const height = v2.length(v2.subtract(a, aOnBC));
 
         return base * height / 2;
+    }
+
+    // computes moment assumming density is uniformly distributed
+    export function triangleSecondMoment(a: Vector2, b: Vector2, c: Vector2, axis: Vector2, density: number): number {
+        const centroid = polygon.triangleCentroid(a, b, c);
+        const base = v2.length(v2.subtract(b, c));
+
+        const aOnBC = v2.add(b, v2.project(v2.subtract(a, b), v2.subtract(c, b)));
+        const height = v2.length(v2.subtract(a, aOnBC));
+        const semibase = v2.length(v2.subtract(aOnBC, b));
+
+        // parallel axis theorem factor
+        const parallelAxisFactor = v2.lengthSquared(v2.subtract(axis, centroid));
+
+        return ((base * base
+                 - base * semibase
+                 + semibase * semibase
+                 + height * height) / 18 + parallelAxisFactor) * density;
     }
 }

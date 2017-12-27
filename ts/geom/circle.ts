@@ -68,5 +68,9 @@ module gerpsquirrel.circle {
                 maxPoint: v2.add(this._centroid, v2.scale(axis, this._radius))
             }
         }
+
+        secondMoment(density: number): number {
+            return Math.PI / 2 * this._radius * this._radius
+        }
     }
 }

@@ -44,5 +44,9 @@ module gerpsquirrel.point {
                 maxPoint: this._v
             }
         }
+
+        secondMoment(density: number): number {
+            return density
+        }
     }
 }
