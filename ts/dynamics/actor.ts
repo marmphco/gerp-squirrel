@@ -1,25 +1,64 @@
-/// <reference path="../math/vector.ts" />
+/// <reference path="../geom/point.ts" />
+/// <reference path="../geom/shape.ts" />
+/// <reference path="../geom/vector.ts" />
 
 module gerpsquirrel.dynamics {
 
     import v2 = gerpsquirrel.vector2;
 
+    import Point = point.Point;
+    import Shape = shape.Shape;
     import Vector2 = v2.Vector2;
 
+    export interface _Actor extends CoordinateSpace {
+        mass(): number
+        momentOfInertia(): number
+        
+        center(): Vector2
+        centerInterpolated(t: number): Vector2
+        setCenter(center: Vector2): void
+
+        velocity(): Vector2
+        velocityAt(point: Vector2): Vector2 
+        setVelocity(velocity: Vector2): void
+
+        orientation(): number
+        setOrientation(orientation: number): void
+
+        angularVelocity(): number
+        setAngularVelocity(angularVelocity: number): void
+
+        advance(timestep: number): void
+        applyForce(from: Vector2, force: Vector2): void
+        applyImpulse(from: Vector2, impulse: Vector2): void
+
+        // Make these free functions since they are derived from other values?
+        linearEnergy(): number
+        angularEnergy(): number
+        energy(): number
+
+        fromLocalSpaceInterpolated(u: Vector2, t: number): Vector2
+    }
+
+    export interface CoordinateSpace {
+        toLocalSpace(u: Vector2): Vector2
+        fromLocalSpace(u: Vector2): Vector2
+    }
+
     export class Actor {
-        mass: number;
+        _mass: number;
         _center: Vector2;
         _previousCenter: Vector2;
         _acceleration: Vector2;
 
-        momentOfInertia: number;
+        _momentOfInertia: number;
         _orientation: number;
         _previousOrientation: number;
         _angularAcceleration: number;
 
         constructor(mass: number, momentOfInertia: number) {
-            this.mass = mass;
-            this.momentOfInertia = momentOfInertia;
+            this._mass = mass;
+            this._momentOfInertia = momentOfInertia;
 
             this._center = [0, 0]
             this._previousCenter = [0, 0]
@@ -31,6 +70,14 @@ module gerpsquirrel.dynamics {
         }
 
         // Getters and Setters
+
+        mass(): number {
+            return this._mass;
+        }
+
+        momentOfInertia(): number {
+            return this._momentOfInertia;
+        }
 
         get center(): Vector2 {
             return this._center;
@@ -87,16 +134,20 @@ module gerpsquirrel.dynamics {
         }
 
         get linearEnergy(): number {
-            return 0.5 * this.mass * v2.lengthSquared(this.velocity);
+            return 0.5 * this._mass * v2.lengthSquared(this.velocity);
         }
 
         get angularEnergy(): number {
             const angularVelocity = this.angularVelocity;
-            return 0.5 * this.momentOfInertia * angularVelocity * angularVelocity;
+            return 0.5 * this._momentOfInertia * angularVelocity * angularVelocity;
         }
 
         get energy(): number {
             return this.linearEnergy + this.angularEnergy;
+        }
+
+        shape(): Shape {
+            return new Point(this._center);
         }
 
         // Converting to/from Local Space
@@ -141,8 +192,8 @@ module gerpsquirrel.dynamics {
             const fromCenter = v2.subtract(from, this._center);
             const torque = v2.crossLength(force, fromCenter);
 
-            this._acceleration = v2.add(this._acceleration, v2.scale(force, 1.0 / this.mass));
-            this._angularAcceleration = this._angularAcceleration + torque / this.momentOfInertia;
+            this._acceleration = v2.add(this._acceleration, v2.scale(force, 1.0 / this._mass));
+            this._angularAcceleration = this._angularAcceleration + torque / this._momentOfInertia;
         }
 
         // from and impulse are in world space
@@ -150,8 +201,8 @@ module gerpsquirrel.dynamics {
             const fromCenter = v2.subtract(from, this._center);
             const angularImpulse = v2.crossLength(impulse, fromCenter);
 
-            this.velocity = v2.add(this.velocity, v2.scale(impulse, 1.0 / this.mass));
-            this.angularVelocity = this.angularVelocity + angularImpulse / this.momentOfInertia;
+            this.velocity = v2.add(this.velocity, v2.scale(impulse, 1.0 / this._mass));
+            this.angularVelocity = this.angularVelocity + angularImpulse / this._momentOfInertia;
         }
     }
 }

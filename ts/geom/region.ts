@@ -1,4 +1,4 @@
-/// <reference path="../math/vector.ts" />
+/// <reference path="../geom/vector.ts" />
 
 module gerpsquirrel.region {
 
