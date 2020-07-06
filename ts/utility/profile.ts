@@ -19,7 +19,8 @@ module gerpsquirrel.profile {
         private _results: { [key: string]: number };
 
         constructor() {
-            this.clear();
+            this._startTimes = {};
+            this._results = {};
         }
 
         // path is a dot delimited path specification like:

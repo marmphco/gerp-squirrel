@@ -1,25 +1,23 @@
 module gerpsquirrel.lazy {
 
     export class Lazy<T> {
-        private _value: T
-        private _dirty: boolean
+        private _value: T | undefined
         private _generator: () => T
 
         constructor(generator: () => T) {
-            this._dirty = true
+            this._value = undefined
             this._generator = generator
         }
 
         value(): T {
-            if (this._dirty) {
+            if (this._value === undefined) {
                 this._value = this._generator()
-                this._dirty = false
             }
             return this._value
         }
 
         markDirty() {
-            this._dirty = true
+            this._value = undefined
         }
     }    
 }

@@ -8,7 +8,7 @@ PRODUCTS = $(JS) $(DTS)
 engine: $(PRODUCTS)
 
 $(PRODUCTS): $(TS)
-	tsc --project ts --outFile $(JS)
+	$(shell npm bin)/tsc --project ts --outFile $(JS)
 
 clean:
 	- rm $(BUILD_DIR)/*

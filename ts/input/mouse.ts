@@ -17,10 +17,10 @@ module gerpsquirrel.input {
     }
 
     export class MouseInput {
-        private _element: Element;
+        private _element: HTMLElement;
         private _stream: BaseStream<MouseInfo>;
 
-        constructor(element: Element) {
+        constructor(element: HTMLElement) {
             this._element = element;
             element.addEventListener("mousedown", this._downListener);
             element.addEventListener("mouseup", this._upListener);
